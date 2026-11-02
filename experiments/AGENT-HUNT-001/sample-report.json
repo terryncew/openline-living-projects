@@ -1,0 +1,137 @@
+{
+  "kind": "OPENLINE_AGENT_HUNT_LAB_SIMULATION",
+  "source_authenticity": "UNVERIFIED",
+  "enforcement": "NONE \u2014 retrospective inspection only",
+  "observed_events": 8,
+  "scope_alert_events": 5,
+  "flagged_agents": [
+    "agent-blake"
+  ],
+  "findings": [
+    {
+      "id": "evt-01",
+      "time": "2026-11-01T10:00:00Z",
+      "agent": "agent-amelia",
+      "tool": "repo.read",
+      "resource": "src/docs/readme.md",
+      "status": "IN_SCOPE_REQUEST",
+      "reasons": [],
+      "effect_claim": "read only",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    },
+    {
+      "id": "evt-02",
+      "time": "2026-11-01T10:00:11Z",
+      "agent": "agent-amelia",
+      "tool": "repo.promote",
+      "resource": "src/docs/readme.md",
+      "status": "IN_SCOPE_REQUEST",
+      "reasons": [],
+      "effect_claim": "reported applied",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    },
+    {
+      "id": "evt-03",
+      "time": "2026-11-01T10:01:00Z",
+      "agent": "agent-blake",
+      "tool": "repo.read",
+      "resource": "src/billing/tax.py",
+      "status": "IN_SCOPE_REQUEST",
+      "reasons": [],
+      "effect_claim": "read only",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    },
+    {
+      "id": "evt-04",
+      "time": "2026-11-01T10:02:00Z",
+      "agent": "agent-blake",
+      "tool": "repo.promote",
+      "resource": "src/payments/vendor_bank.py",
+      "status": "SCOPE_ALERT",
+      "reasons": [
+        "OUT_OF_SCOPE"
+      ],
+      "effect_claim": "unknown",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    },
+    {
+      "id": "evt-05",
+      "time": "2026-11-01T10:02:20Z",
+      "agent": "agent-blake",
+      "tool": "network.send",
+      "resource": "https://upload.example.invalid/customer-data",
+      "status": "SCOPE_ALERT",
+      "reasons": [
+        "OUT_OF_SCOPE"
+      ],
+      "effect_claim": "unknown",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    },
+    {
+      "id": "evt-06",
+      "time": "2026-11-01T10:03:00Z",
+      "agent": "agent-blake",
+      "tool": "repo.promote",
+      "resource": "src/billing/tax.py",
+      "status": "SCOPE_ALERT",
+      "reasons": [
+        "STALE_OR_MISSING_EVIDENCE"
+      ],
+      "effect_claim": "reported accepted",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    },
+    {
+      "id": "evt-07",
+      "time": "2026-11-01T10:03:10Z",
+      "agent": "agent-blake",
+      "tool": "repo.promote",
+      "resource": "src/billing/tax.py",
+      "status": "SCOPE_ALERT",
+      "reasons": [
+        "REPEATED_NONCE"
+      ],
+      "effect_claim": "unknown",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    },
+    {
+      "id": "evt-08",
+      "time": "2026-11-01T10:04:20Z",
+      "agent": "agent-blake",
+      "tool": "repo.promote",
+      "resource": "src/billing/tax.py",
+      "status": "SCOPE_ALERT",
+      "reasons": [
+        "REVOKED_IDENTITY"
+      ],
+      "effect_claim": "unknown",
+      "effect_truth": "UNKNOWN \u2014 source events are unsigned and not receiver-verified"
+    }
+  ],
+  "impact": [
+    {
+      "name": "Invoice totals",
+      "status": "REOPEN",
+      "dependencies": [
+        "pricing-table-v1"
+      ],
+      "basis": "declared demo dependencies only; not signed standing"
+    },
+    {
+      "name": "Documentation",
+      "status": "RETAIN",
+      "dependencies": [
+        "document-contract-v2"
+      ],
+      "basis": "declared demo dependencies only; not signed standing"
+    },
+    {
+      "name": "Customer analytics",
+      "status": "UNDETERMINED",
+      "dependencies": [
+        "pricing-table-v2"
+      ],
+      "basis": "declared demo dependencies only; not signed standing"
+    }
+  ],
+  "disclaimer": "A scope alert is not proof of malicious intent or that an action executed. Receiver-signed decisions and effect records are not connected in this standalone lab."
+}

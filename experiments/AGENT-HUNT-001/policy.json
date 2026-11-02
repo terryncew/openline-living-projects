@@ -1,0 +1,27 @@
+{
+  "agents": {
+    "agent-amelia": {
+      "permissions": [
+        {"tool": "repo.read", "resource": "src/docs/readme.md"},
+        {"tool": "repo.promote", "resource": "src/docs/readme.md"}
+      ]
+    },
+    "agent-blake": {
+      "permissions": [
+        {"tool": "repo.read", "resource": "src/billing/tax.py"},
+        {"tool": "repo.promote", "resource": "src/billing/tax.py"}
+      ],
+      "revoked_at": "2026-11-01T10:04:00Z"
+    }
+  },
+  "evidence": {
+    "document-contract-v2": {"status":"valid"},
+    "pricing-table-v1": {"status":"invalidated"},
+    "pricing-table-v2": {"status":"valid"}
+  },
+  "work": [
+    {"name":"Invoice totals", "dependencies":["pricing-table-v1"], "complete_dependencies":true},
+    {"name":"Documentation", "dependencies":["document-contract-v2"], "complete_dependencies":true},
+    {"name":"Customer analytics", "dependencies":["pricing-table-v2"], "complete_dependencies":false}
+  ]
+}
