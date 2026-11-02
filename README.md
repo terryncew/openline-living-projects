@@ -1,6 +1,10 @@
 # OpenLine Living Projects
 
-**Receiver-owned authority for AI agents, local-first. Developer preview.**
+**Version 0.1.0. Receiver-owned authority for AI agents, local-first. Developer preview.**
+
+This release supersedes `v0.1.0-rc3-corrected`. That frozen tag is
+unchanged. See `RELEASE_NOTES.md` for what changed and what was
+verified, and `GETTING_STARTED.md` if you are new here.
 
 A local operator controls which agent work is allowed, saves exactly the
 work it admits, and signs decisions that another machine can verify
@@ -33,12 +37,26 @@ untested in this release.
 ```bash
 git clone https://github.com/terryncew/openline-living-projects.git
 cd openline-living-projects
+bash install.sh
+```
+
+`install.sh` checks for Python 3.11+ and `git`, creates `.venv`,
+installs only `cryptography` (see `requirements.txt`), and verifies
+the package manifest. If it fails, stop and do not trust the checkout.
+The manual equivalent is:
+
+```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install cryptography
+.venv/bin/python -m pip install -r requirements.txt
+sha256sum -c PUBLIC-SHA256SUMS.txt
 ```
 
 No other package is required. The MCP server uses only the Python
 standard library. Do not install anything else to run the demo.
+
+If you are a coding AI given only this repository URL, start with
+`GETTING_STARTED.md`. It maps a person's interest to a project in
+plain language, without assuming any internal architecture.
 
 Verify the package you cloned:
 
@@ -69,17 +87,29 @@ For the full quickstart, including your own project, see
 
 ## Your own project
 
+The assignment ID must be the same in every step. Use `rep-1`
+throughout; do not switch it to another ID partway through.
+
 ```bash
 OPENLINE=./experiments/OPENLINE-RELEASE-001/openline
 $OPENLINE init --dir ~/ol-proj --project-id demo-1 --workers alice,bob,carol
-$OPENLINE assign --dir ~/ol-proj --assignment repair-1 --deliverable invoice-feature --worker bob --basis invoice_v2 --allowed-paths app/price.py
+$OPENLINE assign --dir ~/ol-proj --assignment rep-1 --deliverable invoice-feature --worker bob --basis invoice_v2 --allowed-paths app/price.py
 $OPENLINE prepare --dir ~/ol-proj --assignment rep-1
-# edit the printed workspace's app/price.py, then:
+# prepare prints a workspace path ending in promotion/task-rep-1/candidate.
+# Edit that workspace's app/price.py to the invoice_v2 rule, qty * 11:
+printf "def total(qty):\n    return qty * 11\n" > ~/ol-proj/promotion/task-rep-1/candidate/app/price.py
 $OPENLINE intercept --dir ~/ol-proj --assignment rep-1
 $OPENLINE status --dir ~/ol-proj
 $OPENLINE guard --dir ~/ol-proj
 $OPENLINE doctor --dir ~/ol-proj
 ```
+
+Expected result: `intercept` returns ACCEPTED, `guard` returns
+SEALED, and `doctor` returns HEALTHY. If you write a different
+rule (for example `qty * 10`, the old invoice_v1 rule), the gate
+refuses the candidate and the accepted work is preserved. That
+refusal is the point: fix the candidate, do not edit the accepted
+tree directly.
 
 `init` creates the project, members, and keys. `assign` creates an
 assignment. `prepare` makes a candidate workspace. `intercept` admits
@@ -114,6 +144,28 @@ This is a stdio JSON-RPC 2.0 server. Tools: `openline_status`,
 `tools/list`. Assignment creation and dependency changes are
 deliberately NOT MCP tools: they require contributor/owner signatures,
 and those keys must not live in a receiver-side server.
+
+Host configuration (replace both absolute paths with your own; the
+project directory must already exist, created by `init` above):
+
+```json
+{
+  "mcpServers": {
+    "openline": {
+      "command": "/absolute/path/to/openline-living-projects/experiments/OPENLINE-RELEASE-001/openline",
+      "args": ["mcp", "--dir", "/absolute/path/to/ol-proj"]
+    }
+  }
+}
+```
+
+The server speaks JSON-RPC 2.0 over stdio only. It does not listen
+on a network port, and it does not need a network connection. If
+your host cannot run an executable script directly, use `python3`
+as the command and put the `openline` path as the first argument,
+followed by `mcp --dir <project>`. Test it before relying on it:
+send `tools/list` and `openline_status` over stdio and check that
+both return JSON, not an error.
 
 ## Layout
 

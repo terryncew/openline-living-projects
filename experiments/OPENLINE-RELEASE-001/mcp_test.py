@@ -122,7 +122,12 @@ def run_test(project_dir: Path):
         evidence["flow"] = "initialize_list_status_prepare_intercept_" \
             "verify_recover_ping"
     finally:
-        proc.stdin.close()
+        if proc.stdin:
+            proc.stdin.close()
+        if proc.stdout:
+            proc.stdout.close()
+        if proc.stderr:
+            proc.stderr.close()
         proc.wait(timeout=30)
     assert proc.returncode == 0, proc.returncode
     (project_dir / "mcp_test_evidence.json").write_text(

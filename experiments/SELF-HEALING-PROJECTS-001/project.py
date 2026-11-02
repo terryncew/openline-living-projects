@@ -414,10 +414,27 @@ class ProjectLedger:
             db.execute('DELETE FROM dependency_contracts WHERE project_id=? AND dep_key=?', (self.id, old_dependency))
             db.execute('INSERT OR REPLACE INTO dependency_contracts VALUES (?,?,?,?)',
                        (self.id, new_dependency, new_dependency, now_ts))
+            # Old candidate rows may predate assignment-scope validation. A later
+            # legitimate repair must never inherit a different worker's memory.
+            poisoned = db.execute(
+                "SELECT memory_id FROM earned_memory WHERE project_id=? AND assignment_id=? "
+                "AND status='CANDIDATE' AND (worker_member!=? OR deliverable_id!=? OR basis!=?)",
+                (self.id, assignment_id, row[4], row[0], basis)
+            ).fetchall()
+            if poisoned:
+                db.execute(
+                    "UPDATE earned_memory SET status='QUARANTINED' WHERE project_id=? AND assignment_id=? "
+                    "AND status='CANDIDATE' AND (worker_member!=? OR deliverable_id!=? OR basis!=?)",
+                    (self.id, assignment_id, row[4], row[0], basis)
+                )
+                self._event(db, 'MEMORY_ASSIGNMENT_SCOPE_QUARANTINED', {
+                    'assignment': assignment_id, 'memory_ids': sorted(m[0] for m in poisoned)
+                })
             db.execute(
                 "UPDATE earned_memory SET status='INHERITED', promoted_head=?, receipt_sha256=COALESCE(?, receipt_sha256) "
-                "WHERE project_id=? AND assignment_id=? AND status='CANDIDATE'",
-                (promoted_head, receipt_sha256, self.id, assignment_id)
+                "WHERE project_id=? AND assignment_id=? AND status='CANDIDATE' "
+                "AND worker_member=? AND deliverable_id=? AND basis=?",
+                (promoted_head, receipt_sha256, self.id, assignment_id, row[4], row[0], basis)
             )
             ev_payload = {'assignment':assignment_id,'head':promoted_head,
                           'dependency_rebind':[old_dependency,new_dependency]}
@@ -486,6 +503,13 @@ class ProjectLedger:
                     except ProjectRefused:
                         trust_status = 'UNTRUSTED_ADVISORY'
                         verified_signer = None
+            existing_claim = db.execute(
+                'SELECT signer_id, trust_status FROM claim_graph WHERE claim_id=? AND project_id=?',
+                (claim_id, self.id)
+            ).fetchone()
+            if existing_claim and existing_claim[1] == 'CRYPTOGRAPHICALLY_BOUND':
+                if trust_status != 'CRYPTOGRAPHICALLY_BOUND' or verified_signer not in (existing_claim[0], 'owner'):
+                    raise ProjectRefused('bound_claim_cannot_be_overwritten_by_untrusted_or_other_signer')
             now_ts = int(time.time())
             db.execute(
                 'INSERT OR REPLACE INTO claim_graph VALUES (?,?,?,?,?,?,?,?,?,?)',
@@ -519,6 +543,26 @@ class ProjectLedger:
         with closing(sqlite3.connect(self.db_path)) as db:
             db.execute('BEGIN IMMEDIATE')
             self._member(db, worker_member)
+            ex_mem = db.execute(
+                'SELECT status, worker_member, assignment_id FROM earned_memory WHERE memory_id=? AND project_id=?',
+                (memory_id, self.id)
+            ).fetchone()
+            if ex_mem is not None:
+                if ex_mem[0] in ('INHERITED', 'QUARANTINED', 'QUESTIONED'):
+                    raise ProjectRefused('settled_memory_cannot_be_overwritten')
+                if ex_mem[1] != worker_member or ex_mem[2] != assignment_id:
+                    raise ProjectRefused('candidate_memory_owned_by_different_worker_or_assignment')
+            if assignment_id is not None:
+                asgn_row = db.execute(
+                    'SELECT deliverable_id, worker_member, basis, state FROM assignments WHERE id=?',
+                    (assignment_id,)
+                ).fetchone()
+                if asgn_row is None:
+                    raise ProjectRefused('memory_assignment_missing')
+                if asgn_row[0] != deliverable_id or asgn_row[1] != worker_member or asgn_row[2] != basis:
+                    raise ProjectRefused('memory_assignment_scope_mismatch')
+                if asgn_row[3] != 'ASSIGNED':
+                    raise ProjectRefused('memory_assignment_not_active')
             now_ts = int(time.time())
             db.execute(
                 'INSERT OR REPLACE INTO earned_memory VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',

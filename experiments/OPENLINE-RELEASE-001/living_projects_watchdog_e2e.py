@@ -317,5 +317,8 @@ def run_watchdog_living_projects_e2e() -> dict:
 if __name__ == "__main__":
     res = run_watchdog_living_projects_e2e()
     ev_path = ROOT / "experiments" / "OPENLINE-AGENT-WATCHDOG-001" / "evidence" / "watchdog_living_projects_e2e.json"
+    # The public package does not ship an evidence/ directory. Create it
+    # instead of failing after the scenario already ran successfully.
+    ev_path.parent.mkdir(parents=True, exist_ok=True)
     ev_path.write_text(json.dumps(res, indent=2) + "\n")
     print(json.dumps(res, indent=2))

@@ -55,11 +55,17 @@ Read this file before using it for anything real.
   superiority claim.
 - The three `openline_lite`-dependent MCP-entry tests are skipped
   offline. They are not passes.
-- Python 3.13 was not tested in the verifier's environment. The
-  release was verified on Python 3.12.3. See `RELEASE_NOTES.md` for
-  the warning reconciliation.
+- Python 3.13 and Python 3.11 were not tested in the verifier's
+  environment. This release was verified on Python 3.12.3 only.
+  See `RELEASE_NOTES.md` for the warning reconciliation and the
+  F-08 connection-closing fix.
 - In-flight revocation is bounded, not instant. This release does not
   claim instant revocation.
+- This 0.1.0 release fixes the security defects found by Argon and
+  GPT-6 in the frozen release (see `RELEASE_NOTES.md` for F-01
+  through F-09). Those defects are not present in the frozen
+  release's code path unless the frozen tag is used. If you use
+  `v0.1.0-rc3-corrected`, upgrade to `v0.1.0`.
 
 ## Reporting
 

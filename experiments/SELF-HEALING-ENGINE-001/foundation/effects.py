@@ -179,7 +179,19 @@ class LocalEffectStore:
             raise EffectDenied('delegation_payload_mismatch')
         if 'operation' in g and isinstance(payload, dict) and payload.get('action', payload.get('operation', g['operation'])) != g['operation']:
             raise EffectDenied('delegation_operation_mismatch')
-        if 'max_amount' in g and isinstance(payload, dict) and isinstance(payload.get('amount'), (int, float)):
+        if isinstance(payload, dict) and 'amount' in payload and payload['amount'] is not None:
+            import math as _math
+            amt = payload['amount']
+            if isinstance(amt, bool) or not isinstance(amt, (int, float)) or not _math.isfinite(amt) or amt <= 0:
+                raise EffectDenied('invalid_amount')
+        if 'max_amount' in g:
+            import math as _math
+            cap = g['max_amount']
+            if (type(cap) not in (int, float) or cap <= 0
+                    or (isinstance(cap, float) and not _math.isfinite(cap))):
+                raise EffectDenied('invalid_delegation_cap')
+            if not isinstance(payload, dict) or payload.get('amount') is None:
+                raise EffectDenied('delegation_amount_required')
             if payload['amount'] > g['max_amount'] or payload['amount'] <= 0:
                 raise EffectDenied('delegation_amount_exceeded')
         if 'allowed_targets' in g and isinstance(payload, dict) and 'target' in payload:
@@ -189,7 +201,7 @@ class LocalEffectStore:
         if isinstance(payload, dict) and 'payload_hash' not in g:
             if 'action' in payload and 'operation' not in g:
                 raise EffectDenied('unscoped_action_payload_refused')
-            if isinstance(payload.get('amount'), (int, float)) and payload['amount'] > 10000 and 'max_amount' not in g:
+            if isinstance(payload.get('amount'), (int, float)) and not isinstance(payload.get('amount'), bool) and payload['amount'] > 10000 and 'max_amount' not in g:
                 raise EffectDenied('unscoped_high_amount_payload_refused')
         return buyer
 

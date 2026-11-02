@@ -107,10 +107,42 @@ tree.
   internal evidence bundle are not in this repository. Their hashes
   above are the link back to the internal verification.
 
+## 0.1.0 additions (on top of the frozen package above)
+
+- Argon outsider experiment: Drive folder
+  `OPENLINE_ARGON_OUTSIDER_001`, id
+  `1LHfGjFuC6QnNUiSAaptjzYoCmYivPM8V`. Patch
+  `OPENLINE_IMPROVEMENTS.patch`, Drive file
+  `1DFnzgdKXoWaUKQyWmEfOyW88sIL9VN4E`, SHA-256
+  `90f77fefe0a7c0dd2b5c9d0e2fd4e0c126631c9e891ca08b684efd17b6c3ba23`.
+- GPT-6 follow-on handoff: Drive file
+  `1UkjvmWdPoA6zMxRHgZACXKr-0hGkcgAm`, SHA-256
+  `4355284c529c593a9a22e33f323d485df98f1244faf7ce570dd56583bbd8e3a3`.
+  Patch `GPT6_ARGON_FOLLOWON_SECURITY.patch`, Drive file
+  `1Z9p9jHAyFbRJ4-AZN2tv53MjIP5Y9m8n`, SHA-256
+  `8f2dbefb9070f4bbb5b32858e695ccbade937ba4b49212be703f63f957681208`.
+  Evidence `GPT6_ARGON_FOLLOWON_EVIDENCE.tar.gz`, Drive file
+  `1HudgT6AKIDZO6Vl6W-hcBYNVjNus5Iuh`, SHA-256
+  `350f02d5491e8c9d8cb6d4495ed44285f44ce741b53c7a0e30ce6994e72f5632`.
+  Both patches were inspected before applying, applied in order
+  (Argon, then GPT-6) to the frozen public package, with
+  `git apply --check` passing for each and no stacking conflict.
+- Final-release verifier fixes (F-08, F-09, MCP version string,
+  first-experience docs) are described in `RELEASE_NOTES.md`.
+  They are the only additional code changes in 0.1.0.
+- New files in 0.1.0: `GETTING_STARTED.md`, `install.sh`,
+  `requirements.txt`, and the three new test files listed in
+  `RELEASE_NOTES.md`. Argon's CivicLedger Shield application is
+  NOT included in this package.
+- The 0.1.0 manifest `PUBLIC-SHA256SUMS.txt` was regenerated
+  from the final 0.1.0 file set. It covers every file in the
+  package except itself, as before.
+
 ## Public package identity
 
 - Repository: https://github.com/terryncew/openline-living-projects
-- Tag: `v0.1.0-rc3-corrected`
+- Tag: `v0.1.0` (this release). The frozen tag
+  `v0.1.0-rc3-corrected` remains unchanged.
 - Manifest: `PUBLIC-SHA256SUMS.txt` in this repository. Run
   `sha256sum -c PUBLIC-SHA256SUMS.txt` from the repository root.
   The manifest covers every file in the package except itself.

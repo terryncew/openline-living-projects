@@ -549,13 +549,23 @@ class ReceiverGuard:
                     raise ValueError("operation_scope_violation")
                 if g_body.get("allowed_targets") is not None and target_id not in g_body["allowed_targets"]:
                     raise ValueError("target_scope_violation")
-                if amount_field is not None or g_body.get("max_amount") is not None:
+                # Verify the signed cap itself, not just the worker's amount.
+                # A signed NaN cap defeats every `amount > max_amount` comparison.
+                import math as _math
+                cap = g_body.get("max_amount")
+                if cap is not None:
+                    if (type(cap) not in (int, float) or cap <= 0
+                            or (isinstance(cap, float) and not _math.isfinite(cap))):
+                        raise ValueError("invalid_authorized_cap")
+                if amount_field is not None or cap is not None:
                     amt_key = amount_field or "amount"
                     val = req_payload.get(amt_key)
+                    if cap is not None and val is None:
+                        raise ValueError("amount_required_for_capped_grant")
                     if val is not None:
-                        if not isinstance(val, (int, float)) or val <= 0:
+                        if isinstance(val, bool) or not isinstance(val, (int, float)) or not _math.isfinite(val) or val <= 0:
                             raise ValueError("invalid_amount")
-                        if g_body.get("max_amount") is not None and val > g_body["max_amount"]:
+                        if cap is not None and val > cap:
                             raise ValueError("amount_exceeds_authorized_cap")
 
                 # 6. Check protected files and protected database records

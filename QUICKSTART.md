@@ -1,13 +1,13 @@
-# OpenLine Living Projects — Developer Quickstart (RC3, public corrected release)
+# OpenLine Living Projects — Developer Quickstart (0.1.0)
 
 **Repository:** https://github.com/terryncew/openline-living-projects  
 **Classification:** Public developer preview — Local-First, Self-Hostable, Zero Paid APIs
 
-**Candidate identity:** original RC3 HEAD `a9ef5d120ef53daf4db19fbb2204022ae0410c64` plus the SQLite connection fix and the strict MCP type-validation fix. See `PROVENANCE.md` for the exact patch hashes, the files included and excluded, and the verified test counts. The original internal archive alone does not contain the fixes.
+**Candidate identity:** frozen `v0.1.0-rc3-corrected` (`136203d0f557213065ade7a638f1169940063e36`) plus the Argon outsider patch, the GPT-6 follow-on security patch, and the final-release fixes listed in `RELEASE_NOTES.md` (F-01 through F-09), plus the first-experience fixes (`GETTING_STARTED.md`, `install.sh`, fixed README example, MCP host config). See `PROVENANCE.md` for exact patch hashes and `RELEASE_NOTES.md` for verified test counts.
 
-**Verification (public package, Python 3.12.3, Linux):** bundled suites in this package: 198 ran, 195 pass, 3 clean offline skips. The full internal gate was 199 ran, 196 pass, 3 skips; the one-test difference is the TOE-graph experiment, which is excluded from this public package. Post-audit adversarial tests: 29/29 with the corrected MCP expectation. Post-audit MCP strict-validation tests: 8 malformed inputs refused, no state mutation, server survives. Release replay: exit 0. Both E2E scripts: exit 0. QUICKSTART core flow: intercept ACCEPTED, guard SEALED, doctor HEALTHY, via direct `./openline`.
+**Verification (final gate, Python 3.12.3, Linux):** bundled suites 206 ran, 203 pass, 3 clean offline skips, 0 fail. Demo ALL STEPS PASS, both replays exit 0, both E2E scripts exit 0, README and QUICKSTART section 3 verbatim ACCEPTED / SEALED / HEALTHY.
 
-The watchdog is advisory; it grants no receiver authority. Same-UID workers can write receiver paths unless isolated. Effect receipts bind database state, not downstream real-world effects. No live coding-agent autonomy, outsider adoption, macOS/Windows, or production isolation has been demonstrated. Conventional refusal/acceptance outcomes showed parity. Python 3.13 was not tested in the verifier's environment; see `RELEASE_NOTES.md`.
+The watchdog is advisory; it grants no receiver authority. Same-UID workers can write receiver paths unless isolated. Effect receipts bind database state, not downstream real-world effects. No live coding-agent autonomy, outsider adoption, macOS/Windows, or production isolation has been demonstrated. Conventional refusal/acceptance outcomes showed parity. Python 3.13 and 3.11 were not tested in the verifier's environment; see `RELEASE_NOTES.md`.
 
 ## 1. Prerequisites
 - Python 3.11+ (`cryptography` package installed)
@@ -17,7 +17,9 @@ The watchdog is advisory; it grants no receiver authority. Same-UID workers can 
 ```bash
 git clone https://github.com/terryncew/openline-living-projects.git
 cd openline-living-projects
-sha256sum -c PUBLIC-SHA256SUMS.txt
+bash install.sh
+# install.sh creates .venv, installs only cryptography, and checks the manifest.
+# The manual equivalent is: python3 -m venv .venv; .venv/bin/python -m pip install -r requirements.txt; sha256sum -c PUBLIC-SHA256SUMS.txt
 
 # Run the Mandatory 12-Step Living Projects End-to-End Test & Conventional Comparison:
 ./experiments/OPENLINE-RELEASE-001/openline replay

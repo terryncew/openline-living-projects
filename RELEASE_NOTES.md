@@ -1,127 +1,212 @@
-# Release notes — OpenLine Living Projects, public corrected RC3
+# Release notes — OpenLine Living Projects 0.1.0
 
-Tag: `v0.1.0-rc3-corrected`
+Tag: `v0.1.0`
 Repository: https://github.com/terryncew/openline-living-projects
 License: Apache-2.0 (see `LICENSE`)
 Status: Public developer preview. Not production authorization
 infrastructure. Not a payment system. Not a hosted service.
 
-## What changed from the internal RC3 candidate
+This release supersedes `v0.1.0-rc3-corrected` as the version to
+point people toward. That frozen tag and commit
+(`136203d0f557213065ade7a638f1169940063e36`) are NOT overwritten
+or changed by this release. This release is a new commit on top of
+it, under a new tag.
 
-Original internal candidate: RC3 HEAD
-`a9ef5d120ef53daf4db19fbb2204022ae0410c64`, branch
-`engineering/argon-living-projects-rc3-20261101`.
+## Baseline
 
-This public release applies exactly one combined correction patch,
-once, to that pristine candidate:
+The parent of this release is the frozen `v0.1.0-rc3-corrected`
+commit, which was itself the internal RC3 candidate
+(`a9ef5d120ef53daf4db19fbb2204022ae0410c64`) plus the manager
+combined correction patch (`RC3_MANAGER_R1_R2_FIX.patch`, SHA-256
+`e691486f41c079d0738d30a6b43e0b34511a754b41203735c45cde108ba61564`:
+SQLite connection context manager, MCP strict validation for
+progress fields and `receiver_verified`, QUICKSTART RC3 labels,
+executable `openline` script).
 
-- Manager patch `RC3_MANAGER_R1_R2_FIX.patch`, Drive file
-  `11YowGTOsN1PmmBlMg4Ruc-5R5GXdyvnz`, SHA-256
-  `e691486f41c079d0738d30a6b43e0b34511a754b41203735c45cde108ba61564`.
-- The patch includes the earlier SQLite connection fix, so the
-  SQLite patch was NOT stacked on top of it. Re-applying the SQLite
-  patch to the corrected tree fails, as expected, because its change
-  is already present.
-- Patch effect, exactly 4 files:
-  1. `experiments/OPENLINE-GRAPH-WATCHDOG-001/openline_graph_watchdog/durable_watchdog.py`
-     — `_db()` becomes a context manager that closes the SQLite
-     connection on all paths. Corrected file SHA-256
-     `a7b81fe1f17639956e63955246fcd8073c61a4818fd2abeef2ec1ed49c1487ba`,
-     identical to the earlier SQLite-corrected candidate.
-  2. `experiments/OPENLINE-RELEASE-001/mcp_server.py`
-     — strict type validation for `openline_watchdog_record`: integer
-     fields must be integers (booleans rejected) and
-     `receiver_verified` must be a boolean. No more `int()` / `bool()`
-     coercion of those fields. Corrected file SHA-256
-     `c8beb19b25157e827e216737f58bb1de0e2951fe2e9bcc8db0684563981a4b7c`.
-     Residual note: `threshold` is still passed through `int()`. It is
-     a configuration parameter, not trusted progress evidence, and it
-     was out of scope for this fix.
-  3. `QUICKSTART.md` — RC3 labels, corrected-candidate notice, and
-     limitations. In this public package the quickstart is further
-     adapted for a git clone (see `PROVENANCE.md` packaging edits).
-  4. `experiments/OPENLINE-RELEASE-001/openline` — mode change to
-     executable (100755). Content hash unchanged:
-     `0161383e66e3987606269638fd755632f07dda9524242792821a378a7df79f66`.
+## What changed in 0.1.0
 
-No other code changes were made. ProjectLedger, Protect,
-SafePromotion, LocalEffectStore, supervisors, and watchdog semantics
-are unchanged from the internal RC3 candidate, except for the three
-deliberate fail-closed RC3 deltas already in RC3 (conflicting duplicate
-attempts raise, progress reset requires after > before and > peak,
-durable migration retroactively halts scopes already at/over threshold).
+### Security corrections, in order, inspected before applying
 
-## Verified results (post-audit, Python 3.12.3, Linux container)
+1. Argon outsider patch `OPENLINE_IMPROVEMENTS.patch`, Drive file
+   `1DFnzgdKXoWaUKQyWmEfOyW88sIL9VN4E`, SHA-256
+   `90f77fefe0a7c0dd2b5c9d0e2fd4e0c126631c9e891ca08b684efd17b6c3ba23`.
+   It applies cleanly to the frozen public package. Fixes:
+   - F-01 (HIGH): `ReceiverGuard` and `LocalEffectStore` reject
+     boolean, NaN, infinite, non-positive, and missing amounts
+     when a signed grant or delegation sets a maximum.
+   - F-02 (HIGH): `ProjectLedger.propose_memory` refuses settled
+     memory overwrites, cross-worker candidate overwrites, and
+     assignment-scope mismatches.
+   - F-03 (MEDIUM): `record_graph_claim` refuses unsigned or
+     other-signer overwrites of a `CRYPTOGRAPHICALLY_BOUND` claim.
+   - F-04 (LOW): MCP `threshold` is strict-typed (no `int()`
+     coercion) in watchdog status and record tools.
+   - F-05 (LOW): `mcp_test.py` closes subprocess stdout/stderr
+     pipes, removing the harness ResourceWarning.
+   - F-06 (MEDIUM): `OPENLINE-PROTECT-005/REPLAY.sh` uses
+     `python3`, not `python`.
+   - F-07 (MEDIUM): `OPENLINE-RELEASE-001/REPLAY.sh` falls back
+     to `/tmp` (or honors `OPENLINE_REPLAY_RUNS_DIR`) when the
+     checkout mount does not support SQLite locking.
+   - New regression suite
+     `tests/test_argon_outsider_improvements.py` (4 tests).
 
-Full internal gate (for reference): bundled suites 199 ran, 196 pass,
-3 clean skips, 0 fail; adversarial suite 29/29; replay exit 0;
-both E2E scripts exit 0.
+2. GPT-6 follow-on security patch
+   `GPT6_ARGON_FOLLOWON_SECURITY.patch`, Drive file
+   `1Z9p9jHAyFbRJ4-AZN2tv53MjIP5Y9m8n`, SHA-256
+   `8f2dbefb9070f4bbb5b32858e695ccbade937ba4b49212be703f63f957681208`.
+   It applies cleanly on top of the Argon-patched tree (it is
+   relative to that candidate, not to pristine RC3). Fixes:
+   - F-01 follow-on (HIGH): the signed cap itself is validated
+     in `ReceiverGuard` and `LocalEffectStore`. A signed NaN,
+     infinite, boolean, string, zero, or negative cap is refused
+     with `invalid_authorized_cap` / `invalid_delegation_cap`,
+     with no ledger effect, even though the grant signature is
+     valid. Previously a NaN cap let amount 99999 commit.
+   - F-02 follow-on (HIGH): `propose_memory` refuses an
+     assignment that does not exist (`memory_assignment_missing`),
+     so a worker cannot preplant memory on a future assignment.
+     When a legitimate repair is accepted, old candidates whose
+     worker, deliverable, or basis do not match the active
+     assignment are quarantined, and only matching candidates
+     are inherited.
+   - New regression suites
+     `tests/test_gpt6_malformed_grant_cap.py` (2 tests) and
+     `tests/test_gpt6_memory_preplant.py` (2 tests).
 
-This public package (TOE experiment excluded; see `PROVENANCE.md`):
-bundled suites 198 ran, 195 pass, 3 clean skips, 0 fail. The 3 skips
-are the `openline_lite`-dependent MCP-entry tests, skipped offline,
-not passes.
+3. Final-release fixes by the independent verifier (this release):
+   - F-08: `OPENLINE-PROTECT-001/protect.py` closes its three
+     SQLite connections with `closing()` instead of relying on
+     garbage collection. Previously `with sqlite3.connect(...)`
+     left connections unclosed at interpreter finalization,
+     which is the source of the ResourceWarnings GPT-6 reported
+     on Python 3.13. After this fix, the Release-001 and RC3
+     suites run on Python 3.12.3 with `-W error::ResourceWarning`
+     and zero ResourceWarnings in their logs. Python 3.13 is
+     still NOT TESTED in this environment (no 3.13 interpreter),
+     so 3.13 cleanliness is not claimed.
+   - F-09: `living_projects_watchdog_e2e.py` creates its
+     evidence directory before writing. On a fresh public clone
+     the script previously failed at the final write with
+     `FileNotFoundError`, after the scenario itself had run.
+     This was pre-existing on the frozen baseline, not a
+     regression from the Argon or GPT-6 patches.
+   - MCP server version string updated from `0.3.0-rc3` to
+     `0.1.0`, to match this release. `mcp_test.py` still passes.
 
-Post-audit re-verification on the corrected candidate:
-- MCP strict validation: 8 malformed inputs refused with `isError`
-  (string "false", string "true", int 1 for `receiver_verified`;
-  string, boolean, float, and null for progress fields), no watchdog
-  scope created, server survives, valid records still work.
-- Adversarial suite, with the one MCP expectation updated from the
-  old coercion behavior to the new refusal behavior: 29/29.
-- Release replay (`REPLAY.sh`): exit 0, about 20 seconds, in two
-  separate runs, including a run with `PYTHONWARNINGS=error::ResourceWarning`.
-- 12-step E2E: exit 0. Watchdog E2E: exit 0.
-- QUICKSTART core flow via direct `./openline`: intercept ACCEPTED,
-  guard SEALED, doctor HEALTHY.
-- Watchdog suite with `-W error::ResourceWarning`: 21/21, no
-  ResourceWarning escapes.
+No other product logic was changed. No rewrite, no second
+platform, no new authority engine.
 
-## Manager-environment discrepancies, reconciled, not waived
+### First-experience fixes (no product logic change)
 
-1. Replay timeout in the manager's environment, twice.
-   In the verifier's environment the same replay exits 0 in about
-   20 seconds, twice, on both the internal corrected tree and the
-   public package. No hang was reproduced. The manager's timeout is
-   recorded as environmental to the manager's runtime, not as a
-   product hang in the verifier's environment. It is not converted
-   into a PASS for the manager's environment.
+- Top-level README own-project example fixed: it assigned
+  `repair-1` and then prepared/intercepted `rep-1`, which
+  failed with `repair_assignment_missing`. It now uses `rep-1`
+  throughout, with the exact price edit (`qty * 11` for basis
+  `invoice_v2`) and the expected ACCEPTED / SEALED / HEALTHY
+  result. Verified verbatim from a fresh project directory.
+- New `GETTING_STARTED.md`: an AI-readable guide that maps a
+  person's interest to a deliverable, basis, assignment, and
+  worker in plain language, with exact install, demo, and
+  first-project commands, and an honest limitations section.
+- New `install.sh` and `requirements.txt`: `install.sh` checks
+  Python 3.11+ and git, creates `.venv`, installs only
+  `cryptography`, and verifies `PUBLIC-SHA256SUMS.txt`, failing
+  closed on any mismatch.
+- README MCP section now includes a copy-paste host config with
+  absolute paths, and a stdio test (tools/list + status) to run
+  before relying on it. Verified with a real stdio MCP client:
+  initialize, tools/list (11 tools), status, and string/boolean
+  threshold refusals (isError), server survives.
 
-2. SQLite resource warnings on Python 3.13 in the manager's environment.
-   Python 3.13 is not available in the verifier's environment, so
-   3.13-specific warnings could not be reproduced here. In the
-   verifier's Python 3.12.3 environment, no SQLite ResourceWarning
-   was found in the watchdog suite (run with warnings as errors),
-   in the replay (run with warnings as errors), or in a grep of the
-   replay log. The only ResourceWarnings surfaced in the replay log
-   are unclosed file pipes in the `mcp_test.py` test harness
-   (stdout/stderr of the MCP subprocess are not closed after
-   `stdin.close()` + `wait()`), not SQLite connections and not
-   product code. That harness warning does not fail the replay and
-   is not a release blocker, but it is recorded here so a future
-   3.13 run can distinguish it from a SQLite leak.
-   Release claim: tested on Python 3.12.3 only. Python 3.13 is
-   NOT TESTED in this verification.
+## Verified results (final gate, Python 3.12.3, Linux)
 
-## What is NOT in this release, and why
+- Bundled suites: 206 ran, 203 pass, 3 clean skips, 0 fail.
+  The 3 skips are the `openline_lite`-dependent MCP-entry tests,
+  skipped offline, not passes. The increase from 198 (frozen
+  release) is exactly the 8 new Argon + GPT-6 tests.
+  Note: the MCP-entry suite must be run from its own directory;
+  run from the repository root its probe subprocess cannot find
+  its server module and fails with `mcp_probe_server_failed`.
+  That is a harness/cwd artifact, not a product failure, and it
+  reproduces on the frozen baseline.
+- New tests: Argon 4/4, GPT-6 4/4.
+- Independent adversarial script (beyond the new suites):
+  27/27 passed on the patched tree, covering guard and effect
+  bad caps (NaN, infinite, boolean, string, zero, negative),
+  bad amounts (boolean, NaN, infinite, negative, zero, string,
+  missing), a valid commit path, no-effect-on-refusal row
+  counts, future-assignment preplant refusal, and cross-worker
+  propose refusal. The same script on the frozen baseline fails
+  and then crashes on a string cap in the effect store, proving
+  it is not vacuous. Bound-claim downgrade is covered by the
+  Argon suite (unsigned refusal, other-signer refusal, original
+  signer legitimate update).
+- Demo: `run_demo.py` ALL STEPS PASS. `openline replay` exit 0.
+- Replays: `OPENLINE-RELEASE-001/REPLAY.sh` exit 0
+  ("RELEASE REPLAY COMPLETE"), `OPENLINE-PROTECT-005/REPLAY.sh`
+  exit 0 ("PRIVATE GATES COMPLETE").
+- E2E: `living_projects_e2e.py` exit 0 (PASS),
+  `living_projects_watchdog_e2e.py` exit 0 after the F-09 fix
+  (carol intercept ACCEPTED, final deliverables CURRENT).
+- README own-project verbatim: ACCEPTED / SEALED / HEALTHY.
+- QUICKSTART section 3 verbatim: intercept ACCEPTED, memory
+  INHERITED, guard SEALED, doctor HEALTHY.
+- MCP: `mcp_test.py` ALL STEPS PASS; host-config stdio test
+  passed (see above); MCP strict validation from the earlier
+  post-audit gate (8 malformed inputs refused) still holds via
+  the Argon/GPT-6 suites.
+- Two-disruption recovery: covered by the demo, the 12-step E2E,
+  and RC3 suite test_02 (two disruptions, revocation, replacement,
+  unrelated work preserved). Protect-005 replay also reports
+  "TWO_SCRIPTED_DISRUPTIONS_LOCAL_GIT_PASS" with unrelated
+  accepted work preserved.
+- Conventional comparison: PARITY on refusal/acceptance/retry/
+  revocation outcomes (replay baseline line, RC3 suite
+  test_06/07, Protect-005 conventional comparison). The narrow
+  OpenLine delta is signed receipts including refusals,
+  effect-state binding, and persistent cross-agent stagnation
+  tracking with signed reconciliation. No superiority claim.
+- Argon's working application CivicLedger Shield (NOT part of
+  this public package, NOT published here): 10/10 tests pass
+  when run from its own directory against this candidate.
+  It is evidence that a stranger's AI could build with the
+  primitives, not a claim of adoption or revenue.
+- Resource warnings: 0 ResourceWarnings in any bundled suite log
+  on Python 3.12.3 with `-W error::ResourceWarning`, after the
+  F-08 fix.
 
-See `PROVENANCE.md` for the full excluded-files list. In short:
-the internal private/draft roadmap document, all internal handoff /
-verdict / breakthrough / gate / closeout documents, the TOE-graph
-experiment (including coherence-dynamics files), the private
-watchdog zip bundle, the neutral-evaluation materials, and internal
-evidence logs are excluded. The public package contains product code,
-its tests, and public documentation only. The excluded TOE experiment
-accounts for the one-test difference between the internal gate count
-(199) and the public package count (198).
+## What remains NOT TESTED or NOT CLAIMED
 
-## What is NOT claimed
+- Python 3.13 and Python 3.11: NOT TESTED in this environment
+  (only 3.12.3 available). GPT-6's Python 3.13 resource-warning
+  finding is addressed by the F-08 fix in code, but 3.13
+  cleanliness is not verified here.
+- Live coding-agent host: NOT TESTED. Codex binary is detected
+  by `doctor` but is not logged in; no paid API was used.
+  MCP is proven at raw stdio protocol level only.
+- External receiver acceptance, outsider adoption, revenue:
+  NOT TESTED and NOT CLAIMED. Argon's experiment separates
+  "AI suggested something" and "AI built something" (achieved)
+  from "a human found it useful" and "someone adopted or paid"
+  (not occurred).
+- macOS/Windows: NOT TESTED. Linux only.
+- Production isolation beyond a container, multi-agent or
+  held-out tasks, cost/latency superiority: NOT CLAIMED.
+- In-flight revocation is bounded, not instant. Same-UID
+  deployment condition stands: the gate holds only under
+  separate OS identities. Watchdog is advisory, authorization
+  NONE. A signed receipt proves what the receiver recorded and
+  signed, not a downstream effect, and cannot cover actions
+  that never crossed the recording boundary.
 
-No live coding-agent autonomy, no external receiver acceptance, no
-outsider adoption, no production isolation, no macOS/Windows support,
-no multi-agent or held-out task results, no cost or latency
-superiority, no instant revocation. Conventional comparison is
-PARITY on refusal/acceptance/retry/revocation outcomes. A signed
-receipt proves what the receiver recorded and signed, not that a
-downstream effect happened, and it cannot cover actions that never
-crossed the recording boundary.
+## What is NOT in this release
+
+Same exclusions as the frozen release (see `PROVENANCE.md`):
+internal roadmap, handoff/verdict/gate/closeout documents, the
+TOE-graph experiment, the private watchdog zip, neutral
+evaluation materials, internal evidence logs, and stale internal
+manifests. Argon's CivicLedger Shield application is also NOT
+included; it is Argon's work, held in Drive, not part of this
+package. No private research, credentials, or founder TOE
+documents are published.

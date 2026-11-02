@@ -32,7 +32,7 @@ from continuity import audit as continuity_audit  # noqa: E402
 import living_project  # noqa: E402
 
 SUPPORTED_PROTOCOLS = ("2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25")
-SERVER_VERSION = "0.3.0-rc3"
+SERVER_VERSION = "0.1.0"
 
 
 def _tool(name, description, properties, required):
@@ -244,7 +244,9 @@ class Server:
             })
         if name == "openline_watchdog_status":
             from durable_watchdog import DurableGraphWatchdog
-            wd = DurableGraphWatchdog(self.project.db_path, threshold=int(args.get("threshold", 3)))
+            if "threshold" in args and type(args["threshold"]) is not int:
+                raise ValueError("threshold must be an integer")
+            wd = DurableGraphWatchdog(self.project.db_path, threshold=args.get("threshold", 3))
             return self._text({"status": "OK", "watchdog_scope": wd.status(args["deliverable"], args["basis"])})
         if name == "openline_watchdog_record":
             from graph_watchdog import VerifiedAttempt
@@ -255,7 +257,9 @@ class Server:
                     raise ValueError(f"{field} must be an integer")
             if "receiver_verified" in args and type(args["receiver_verified"]) is not bool:
                 raise ValueError("receiver_verified must be a boolean")
-            wd = DurableGraphWatchdog(self.project.db_path, threshold=int(args.get("threshold", 3)))
+            if "threshold" in args and type(args["threshold"]) is not int:
+                raise ValueError("threshold must be an integer")
+            wd = DurableGraphWatchdog(self.project.db_path, threshold=args.get("threshold", 3))
             att = VerifiedAttempt(
                 deliverable_id=args["deliverable"],
                 basis=args["basis"],

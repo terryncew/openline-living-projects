@@ -14,6 +14,7 @@ import subprocess
 from pathlib import Path
 import time
 import uuid
+from contextlib import closing
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 SCHEMA = "openline.protect.incident.v1"
@@ -278,7 +279,7 @@ class Protect:
         if hasattr(self.project, "db_path"):
             try:
                 import sqlite3 as _sq
-                with _sq.connect(str(self.project.db_path)) as _db:
+                with closing(_sq.connect(str(self.project.db_path))) as _db:
                     has_tbl = _db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='earned_memory'").fetchone()
                     if has_tbl:
                         _db.execute("UPDATE earned_memory SET receipt_sha256=? WHERE assignment_id=? AND receipt_sha256 IS NULL",
@@ -502,7 +503,7 @@ def verify_receipt(receipt: dict, trusted_receiver_pub_hex: str, *,
                                      capture_output=True, timeout=5)
                 if anc.returncode == 0:
                     import sqlite3 as _sq
-                    with _sq.connect(str(project_db)) as _conn:
+                    with closing(_sq.connect(str(project_db))) as _conn:
                         _proj = _conn.execute("SELECT last_accepted FROM projects").fetchone()
                         _asgn = _conn.execute("SELECT state, promoted_head FROM assignments WHERE id=?",
                                               (payload.get("assignment"),)).fetchone()
@@ -539,7 +540,7 @@ def verify_receipt(receipt: dict, trusted_receiver_pub_hex: str, *,
         if payload.get("project_id") != report.get("project"):
             raise ProtectError("receipt_project_id_mismatch")
         import sqlite3
-        with sqlite3.connect(str(project_db)) as conn:
+        with closing(sqlite3.connect(str(project_db))) as conn:
             row = conn.execute("SELECT state FROM assignments WHERE id=?",
                                (payload.get("assignment"),)).fetchone()
         if row is None:
