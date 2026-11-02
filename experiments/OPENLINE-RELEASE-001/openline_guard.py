@@ -396,6 +396,29 @@ class ReceiverGuard:
         cols = [d[0] for d in cur.description]
         return sha256_hex({cols[i]: row[i] for i in range(len(cols))})
 
+    def _resolve_protected_pk(self, db: sqlite3.Connection, table_name: str, target_table: str | None, target_pk_col: str | None) -> str:
+        """Resolve the single column identifying a protected row, fail-closed.
+
+        A protected table must have exactly one declared PRIMARY KEY column.
+        The only exception is the execution's own target table, where the
+        caller-supplied target_pk_col is the configured identifier (the same
+        column used for the effect digest). Any other case -- no declared
+        PRIMARY KEY, a composite PRIMARY KEY, a missing table, or a PRAGMA
+        failure -- raises protected_record_pk_unresolvable instead of
+        silently skipping the row (post-release-002, GPT-6 A: Argon's patch
+        left pk_col_name None for such rows and its `except: pass` dropped
+        them from the snapshot, so collateral mutations went unchecked).
+        """
+        quoted_tbl = '"' + table_name.replace('"', '""') + '"'
+        info = db.execute(f"PRAGMA table_info({quoted_tbl})").fetchall()
+        columns = [c[1] for c in info]
+        pk_cols = [c[1] for c in info if c[5] > 0]
+        if len(pk_cols) == 1:
+            return pk_cols[0]
+        if table_name == target_table and target_pk_col is not None and target_pk_col in columns:
+            return target_pk_col
+        raise ValueError("protected_record_pk_unresolvable")
+
     def _emit_and_store_receipt(
         self,
         db: sqlite3.Connection,
@@ -568,6 +591,26 @@ class ReceiverGuard:
                         if cap is not None and val > cap:
                             raise ValueError("amount_exceeds_authorized_cap")
 
+                # 5b. Grant consumption (post-release-002, H-04 + GPT-6 B).
+                # Grants are single-execution: one COMMITTED receipt under a
+                # grant_id spends it. The idempotency fast path above already
+                # returns ALREADY_COMMITTED for an identical payload while the
+                # receipt is CURRENT, without re-running fn. Once standing is
+                # REOPEN (or the tuple differs), a second commit under the
+                # same grant_id would otherwise re-execute a non-idempotent
+                # effect or double-spend a cap, so it is refused here.
+                # REOPEN marks work as needing repair; it does NOT restore
+                # spending authority. A redo requires a fresh grant. This
+                # check deliberately ignores standing and tuple: any prior
+                # COMMITTED receipt with this grant_id consumes it.
+                if grant_id is not None:
+                    prior_commit = db.execute(
+                        "SELECT 1 FROM ol_guard_receipts WHERE status='COMMITTED' AND json_extract(receipt_json, '$.payload.grant_id')=?",
+                        (grant_id,),
+                    ).fetchone()
+                    if prior_commit:
+                        raise ValueError("grant_already_consumed")
+
                 # 6. Check protected files and protected database records
                 if target_file is not None:
                     resolved_file = str(Path(target_file).resolve())
@@ -594,6 +637,18 @@ class ReceiverGuard:
                     if up_body.get("status") != "COMMITTED":
                         raise ValueError("upstream_receipt_not_committed")
 
+                # 8b. Snapshot every protected database row BEFORE fn runs.
+                # The declared-target check above only refuses fn touching the
+                # declared target; a buggy or compromised fn could otherwise
+                # mutate any other protected row and still COMMIT (H-03).
+                # Resolution is fail-closed (see _resolve_protected_pk): an
+                # unresolvable protected row refuses the whole execution
+                # before fn runs, rather than being skipped from the check.
+                protected_snapshots = {}
+                for ptbl, ppk in db.execute("SELECT table_name, pk_value FROM ol_guard_protected_records").fetchall():
+                    pk_col_name = self._resolve_protected_pk(db, ptbl, target_table, target_pk_col)
+                    protected_snapshots[(ptbl, ppk)] = (pk_col_name, self._row_digest(db, ptbl, pk_col_name, ppk))
+
                 # 9. Execute the operation inside savepoint
                 fn(db, req_payload)
 
@@ -606,10 +661,13 @@ class ReceiverGuard:
                 if self._is_revoked("grant", grant_id):
                     raise ValueError("grant_revoked_mid_task")
 
-                # Verify protected files remained byte-identical
+                # Verify protected files and protected database rows remained byte-identical
                 for p_file, expected_sha in self.protected_files.items():
                     if self._file_sha(Path(p_file)) != expected_sha:
                         raise ValueError("protected_file_bytes_altered")
+                for (ptbl, ppk), (pk_col_name, before_digest) in protected_snapshots.items():
+                    if self._row_digest(db, ptbl, pk_col_name, ppk) != before_digest:
+                        raise ValueError("protected_record_collateral_mutation_refused")
 
                 # 10. Compute post-mutation effect digest
                 if target_file is not None:

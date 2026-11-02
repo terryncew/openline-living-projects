@@ -484,7 +484,7 @@ class ProjectLedger:
         verified_signer = None
         with closing(sqlite3.connect(self.db_path)) as db:
             db.execute('BEGIN IMMEDIATE')
-            if signer_id and signature_hex:
+            if signer_id is not None and signature_hex is not None:
                 pub = None
                 if signer_id == 'owner':
                     pub = self.owner_pub
@@ -495,14 +495,18 @@ class ProjectLedger:
                     ).fetchone()
                     if row and row[2] == 1:
                         pub = row[0]
-                if pub:
-                    try:
-                        verify_owner(pub, envelope, signature_hex)
-                        trust_status = 'CRYPTOGRAPHICALLY_BOUND'
-                        verified_signer = signer_id
-                    except ProjectRefused:
-                        trust_status = 'UNTRUSTED_ADVISORY'
-                        verified_signer = None
+                if not pub:
+                    raise ProjectRefused('claim_signer_not_active_member')
+                verify_owner(pub, envelope, signature_hex)
+                trust_status = 'CRYPTOGRAPHICALLY_BOUND'
+                verified_signer = signer_id
+            # NOTE (post-release-002): a claim that presents only one half of a
+            # credential (signer without signature, or signature without signer)
+            # is still an unsigned advisory claim: verified_signer stays None,
+            # the presented fragment is dropped, and trust stays
+            # UNTRUSTED_ADVISORY. Only a fully presented signer+signature pair
+            # is verified, and a failed verification now refuses instead of
+            # silently downgrading to advisory (H-02).
             existing_claim = db.execute(
                 'SELECT signer_id, trust_status FROM claim_graph WHERE claim_id=? AND project_id=?',
                 (claim_id, self.id)
@@ -552,7 +556,9 @@ class ProjectLedger:
                     raise ProjectRefused('settled_memory_cannot_be_overwritten')
                 if ex_mem[1] != worker_member or ex_mem[2] != assignment_id:
                     raise ProjectRefused('candidate_memory_owned_by_different_worker_or_assignment')
-            if assignment_id is not None:
+            if not isinstance(assignment_id, str) or not assignment_id.strip():
+                raise ProjectRefused('memory_assignment_required')
+            if True:
                 asgn_row = db.execute(
                     'SELECT deliverable_id, worker_member, basis, state FROM assignments WHERE id=?',
                     (assignment_id,)
