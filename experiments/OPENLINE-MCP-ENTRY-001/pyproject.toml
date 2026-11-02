@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=65"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openline-mcp-entry-private-preview"
+version = "0.1.0.dev1"
+description = "Local receiver-owned MCP for genuine OpenLine Lite checks and impact (private preview)"
+requires-python = ">=3.10"
+authors = [{name = "Terrynce White"}]
+dependencies = [
+  "openline-lite @ git+https://github.com/terryncew/openline-lite.git@57e4f960e892e6df845e8be0052ac88860dd7b16",
+  "cryptography>=42,<48",
+]
+
+[project.scripts]
+openline-mcp-entry = "openline_mcp_entry.server:main"
+openline-mcp-setup = "openline_mcp_entry.onboard:main"
+openline-mcp-sample = "openline_mcp_entry.quickstart:main"
+openline-mcp-verify = "openline_mcp_entry.verify:main"
+
+[tool.setuptools]
+packages = ["openline_mcp_entry"]

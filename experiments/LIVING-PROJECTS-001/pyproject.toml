@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openline-living-projects-preview"
+version = "0.0.1"
+description = "Read-only OpenLine Living Projects status on operator-owned Git and ProjectLedger state"
+requires-python = ">=3.11"
+authors = [{name = "Terrynce White"}]
+
+[project.scripts]
+openline-living = "living_project:main"
+
+[tool.setuptools]
+py-modules = ["living_project"]

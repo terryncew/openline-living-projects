@@ -1,0 +1,9 @@
+{
+  "schema": "openline.mcp-entry.operator.v1",
+  "check_profiles": {"release": "./private-packs/check.json"},
+  "impact_profiles": {"dependency-update": "./private-packs/impact-pack.json"},
+  "gate_key": "./private-secrets/gate.key",
+  "gate_id": "local-receiver",
+  "records_dir": ".openline-mcp-records",
+  "timeout_seconds": 20
+}

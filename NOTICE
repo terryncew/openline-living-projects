@@ -1,0 +1,12 @@
+OpenLine Living Projects — Developer Preview
+Copyright 2026 Terrynce White
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+No third-party source code is vendored in this distribution.
+The only runtime dependency is cryptography, installed separately
+under its own license (Apache-2.0 OR BSD-3-Clause). All other
+imports are Python standard library, plus git and SQLite at runtime.
+
+See PROVENANCE.md for the included files, the excluded files, and
+the limits of the provenance check.

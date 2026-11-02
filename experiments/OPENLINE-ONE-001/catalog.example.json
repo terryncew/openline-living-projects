@@ -1,0 +1,7 @@
+{
+  "schema": "openline.one.operator-catalog.v1",
+  "total_cap_micros": 20000000,
+  "provider_caps_micros": {"openai": 10000000, "anthropic": 10000000},
+  "models": [{"provider": "openai", "name": "FICTIONAL_STUDENT", "input_usd_per_million": "0.50", "output_usd_per_million": "1.00", "input_limit": 2000, "output_limit": 1000}],
+  "teacher": {"provider": "anthropic", "name": "FICTIONAL_TEACHER", "input_usd_per_million": "5.00", "output_usd_per_million": "15.00", "input_limit": 3000, "output_limit": 1000}
+}

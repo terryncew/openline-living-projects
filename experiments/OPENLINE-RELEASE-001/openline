@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+"""OpenLine release CLI entry point.
+
+Usage: python3 experiments/OPENLINE-RELEASE-001/openline <command> ...
+Run from any working directory; the script locates the engine tree
+from its own path (see engine_loader.py).
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from openline_cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())
