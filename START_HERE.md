@@ -46,11 +46,18 @@ Connect needs its `src/` on `PYTHONPATH` for subprocess tests — use an
 absolute path, not a relative one).
 
 **Living Energy interpreter note:** its namespace sandbox masks `/home`,
-`/root`, `/mnt`, and `/working_dir`. Run its suite from an interpreter
-outside those paths (for example the system `python3`), or the sandbox
-tests fail by design. The CI host disallows user namespaces, so sandbox
-tests are NOT TESTED in CI; the full 67-test suite was verified locally
-with a system interpreter. The sandbox no longer needs `iproute2`.
+`/root`, `/mnt`, `/working_dir`, `/tmp`, and `/var/tmp` (fresh tmpfs over
+the last two). Run its suite from an interpreter outside all of those
+paths, or the sandbox tests fail by design: a venv under `$HOME` or
+`/tmp` disappears inside the namespace because the interpreter itself
+is masked. The simplest working setup is the system interpreter with
+cryptography installed as a system package, or a venv under `/opt`.
+Do not rely on `pip install --user` cryptography for
+`./REPLAY_EXPERIMENTAL.sh`: that script sets `PYTHONNOUSERSITE=1`,
+which hides user-site packages from the sandbox branch. The CI host
+disallows user namespaces, so sandbox tests are NOT TESTED in CI; the
+full 67-test suite was verified locally with a properly placed
+interpreter. The sandbox no longer needs `iproute2`.
 
 ## What is NOT here (do not mistake these for shipped features)
 
