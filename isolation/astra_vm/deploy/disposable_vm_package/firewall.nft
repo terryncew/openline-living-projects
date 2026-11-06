@@ -1,0 +1,21 @@
+# Scoped additive tables; never flush the host ruleset. Load BEFORE guest creation.
+table inet openline_vm {
+ chain input {
+  type filter hook input priority -310; policy accept;
+  iifname "olvmt0" ct state established,related accept
+  iifname "olvmt0" ip daddr 192.168.251.1 tcp dport 7443 accept
+  iifname "olvmt0" counter drop
+ }
+ chain forward {
+  type filter hook forward priority -310; policy accept;
+  iifname "olvmt0" counter drop
+  oifname "olvmt0" counter drop
+ }
+}
+table bridge openline_vm_l2 {
+ chain forward {
+  type filter hook forward priority -310; policy accept;
+  meta ibrname "olvmt0" counter drop
+  meta obrname "olvmt0" counter drop
+ }
+}

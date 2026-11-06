@@ -1,7 +1,7 @@
 """OpenLine Living Projects MCP server -- stdio JSON-RPC, standard library only.
 
 Tools (receiver-side inspection, gating, memory inheritance, diagnostics, and verification):
-- openline_status: head, standings, assignments, dependency contracts, boundary check.
+- openline_status: head, standings, assignments, dependency contracts, Kill Switch standing, boundary check.
 - openline_graph: dependency graph, what-if impact analysis, and Claim Graph (CRYPTOGRAPHICALLY_BOUND vs UNTRUSTED_ADVISORY).
 - openline_prepare: prepare a candidate worktree for an assignment (and optionally propose a CANDIDATE memory).
 - openline_intercept: gate a prepared candidate (ACCEPTED / STOPPED / UNKNOWN) and ratchet Earned Memory.
@@ -9,7 +9,11 @@ Tools (receiver-side inspection, gating, memory inheritance, diagnostics, and ve
 - openline_recover: reconcile an interrupted promotion idempotently.
 - openline_memory: inspect or inherit Verified Experience (INHERITED vs QUESTIONED vs QUARANTINED vs CANDIDATE).
 - openline_history: chronological ledger events, accepted Git commits, and signed receipts.
-- openline_doctor: boundary, key-pinning, continuity, and runtime health check.
+- openline_kill_switch_status: read authoritative Kill Switch standing (stopped, epoch, stop_seq, clear_seq, reason).
+- openline_kill_switch_stop: owner-signed emergency Kill Switch STOP (advances epoch and records monotonic stop_seq).
+- openline_kill_switch_clear: owner-signed clear_stop (advances epoch while preserving stop_seq so pre-STOP authority stays dead).
+- openline_kill_switch_audit: offline hash-chain and verdict audit over Kill Switch JSONL evidence.
+- openline_doctor: boundary, key-pinning, continuity, Kill Switch, and runtime health check.
 """
 from __future__ import annotations
 from contextlib import closing
@@ -32,7 +36,7 @@ from continuity import audit as continuity_audit  # noqa: E402
 import living_project  # noqa: E402
 
 SUPPORTED_PROTOCOLS = ("2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25")
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.3.0-rc3"
 
 
 def _tool(name, description, properties, required):
@@ -46,7 +50,7 @@ def _tool(name, description, properties, required):
 TOOLS = [
     _tool(
         "openline_status",
-        "OpenLine project head, deliverable standings, assignments, and receiver-boundary check.",
+        "OpenLine project head, deliverable standings, assignments, Kill Switch standing, and receiver-boundary check.",
         {},
         [],
     ),
@@ -125,8 +129,42 @@ TOOLS = [
         ["deliverable", "basis", "worker", "attempt"],
     ),
     _tool(
+        "openline_kill_switch_status",
+        "Inspect authoritative Kill Switch standing (stopped, epoch, stop_seq, clear_seq, reason).",
+        {},
+        [],
+    ),
+    _tool(
+        "openline_kill_switch_stop",
+        "Issue an owner-controlled emergency Kill Switch STOP (requires externally supplied owner signature bound to expected epoch).",
+        {
+            "reason": {"type": "string"},
+            "signature": {"type": "string"},
+            "actor_role": {"type": "string"},
+            "expected_epoch": {"type": "integer"},
+        },
+        ["reason", "signature", "expected_epoch"],
+    ),
+    _tool(
+        "openline_kill_switch_clear",
+        "Clear an owner-controlled Kill Switch STOP while preserving monotonic stop_seq so pre-STOP authority stays dead.",
+        {
+            "reason": {"type": "string"},
+            "signature": {"type": "string"},
+            "actor_role": {"type": "string"},
+            "expected_epoch": {"type": "integer"},
+        },
+        ["reason", "signature", "expected_epoch"],
+    ),
+    _tool(
+        "openline_kill_switch_audit",
+        "Verify hash-chained Kill Switch JSONL evidence offline.",
+        {"evidence_path": {"type": "string"}},
+        ["evidence_path"],
+    ),
+    _tool(
         "openline_doctor",
-        "Run receiver boundary, continuity, and Git-vs-SQLite health diagnostics.",
+        "Run receiver boundary, continuity, Kill Switch, and Git-vs-SQLite health diagnostics.",
         {},
         [],
     ),
@@ -138,11 +176,32 @@ class Server:
         import openline_cli as cli  # noqa: E402
         self.cli = cli
         self.config = config
-        _promo, project, protect = cli._build_engines(config, worker_uid)
-        self.promo = _promo
-        self.project = project
-        self.protect = protect
         self.worker_uid = worker_uid
+        sock_path = os.environ.get("OPENLINE_SERVICE_SOCKET") or config.get("service_socket")
+        if sock_path:
+            from ipc_client import OpenLineIPCClient
+            key_path = os.environ.get("OPENLINE_CLIENT_KEY") or config.get("client_key")
+            signer_key = cli._read_key(Path(key_path))
+            principal_id = os.environ.get("OPENLINE_PRINCIPAL_ID") or config.get("principal_id") or "worker:bob"
+            self.ipc_client = OpenLineIPCClient(
+                socket_path=Path(sock_path),
+                channel=os.environ.get("OPENLINE_IPC_CHANNEL") or config.get("ipc_channel", "worker"),
+                deployment_id=config.get("deployment_id", "openline-prod-1"),
+                project_id=config["project_id"],
+                receiver_id=config.get("receiver_id", "receiver-p1"),
+                principal_id=principal_id,
+                signer_key=signer_key,
+                pinned_receiver_pub=config["receiver_pub"],
+            )
+            self.promo = None
+            self.project = None
+            self.protect = None
+        else:
+            self.ipc_client = None
+            _promo, project, protect = cli._build_engines(config, worker_uid)
+            self.promo = _promo
+            self.project = project
+            self.protect = protect
 
     def _text(self, obj, is_error=False):
         return {
@@ -151,6 +210,49 @@ class Server:
         }
 
     def call(self, name, args):
+        if self.ipc_client is not None:
+            if name == "openline_status":
+                resp = self.ipc_client.call("project.status", {})
+                return self._text(resp["result"], is_error=(resp["status"] != "OK"))
+            if name == "openline_prepare":
+                dest = Path(args.get("client_workspace") or (Path(self.config["dir"]) / f"mcp-client-{args['assignment']}"))
+                resp = self.ipc_client.prepare_workspace(
+                    args["assignment"],
+                    dest,
+                    propose_memory=args.get("memory_id"),
+                    diagnosis=args.get("diagnosis"),
+                    lesson=args.get("lesson"),
+                )
+                if resp["status"] != "OK":
+                    return self._text(resp["result"], is_error=True)
+                return self._text({
+                    "assignment": args["assignment"],
+                    "workspace": resp["result"]["client_workspace"],
+                    "snapshot_db": resp["result"]["client_snapshot_db"],
+                    "proposed_memory": resp["result"].get("proposed_memory"),
+                })
+            if name == "openline_intercept":
+                ws = Path(args.get("client_workspace") or (Path(self.config["dir"]) / f"mcp-client-{args['assignment']}" / "workspace"))
+                resp = self.ipc_client.submit_workspace_proposal(args["assignment"], ws)
+                return self._text(resp["result"], is_error=(resp["status"] not in ("ACCEPTED", "STOPPED", "UNKNOWN_RECONCILIATION_REQUIRED")))
+            if name == "openline_recover":
+                resp = self.ipc_client.call("repair.reconcile", {"assignment_id": args["assignment"]})
+                return self._text(resp["result"], is_error=(resp["status"] not in ("ACCEPTED", "STOPPED", "UNKNOWN_RECONCILIATION_REQUIRED")))
+            if name == "openline_kill_switch_stop":
+                resp = self.ipc_client.call("control.stop", {
+                    "reason": args["reason"],
+                    "owner_signature": args["signature"],
+                    "expected_epoch": args["expected_epoch"],
+                })
+                return self._text(resp["result"], is_error=(resp["status"] != "OK"))
+            if name == "openline_kill_switch_clear":
+                resp = self.ipc_client.call("control.clear", {
+                    "reason": args["reason"],
+                    "owner_signature": args["signature"],
+                    "expected_epoch": args["expected_epoch"],
+                })
+                return self._text(resp["result"], is_error=(resp["status"] != "OK"))
+            return self._text({"error": f"tool_not_available_on_worker_ipc:{name}"}, is_error=True)
         if name == "openline_status":
             snap = self.project.snapshot()
             return self._text({
@@ -158,6 +260,7 @@ class Server:
                 "head": self.promo.accepted(),
                 "contract": snap["project"][2],
                 "project_status": snap["project"][4],
+                "kill_switch": self.project.read_stop_state(),
                 "deliverables": [{"id": d[0], "member": d[1], "standing": d[2]} for d in snap["deliverables"]],
                 "boundary": check_receiver_boundary(
                     self.protect.receiver_paths(), receiver_uid=os.getuid(), worker_uid=self.worker_uid
@@ -251,7 +354,6 @@ class Server:
         if name == "openline_watchdog_record":
             from graph_watchdog import VerifiedAttempt
             from durable_watchdog import DurableGraphWatchdog
-            # JSON types must not be coerced into trusted progress evidence.
             for field in ("progress_before", "progress_after"):
                 if field in args and (type(args[field]) is not int):
                     raise ValueError(f"{field} must be an integer")
@@ -271,6 +373,28 @@ class Server:
                 external_mutation=args.get("external_mutation", "none"),
             )
             return self._text({"status": "WATCHDOG_RECORDED", "advisory": wd.record(att)})
+        if name == "openline_kill_switch_status":
+            return self._text({"status": "OK", "project_id": self.project.id, "kill_switch": self.project.read_stop_state()})
+        if name in ("openline_kill_switch_stop", "openline_kill_switch_clear"):
+            reason = args["reason"]
+            actor_role = args.get("actor_role", "owner")
+            act = "issue_stop" if name == "openline_kill_switch_stop" else "clear_stop"
+            sig = args.get("signature")
+            if not isinstance(sig, str) or not sig:
+                raise ValueError("externally signed owner intent required; MCP never signs with owner keys")
+            expected_epoch = args.get("expected_epoch")
+            if type(expected_epoch) is not int or expected_epoch < 1:
+                raise ValueError("expected_epoch required")
+            if name == "openline_kill_switch_stop":
+                st = self.project.issue_stop(reason, sig, actor_role=actor_role, expected_epoch=expected_epoch)
+                return self._text({"status": "KILL_SWITCH_STOPPED", "project_id": self.project.id, "kill_switch": st})
+            st = self.project.clear_stop(reason, sig, actor_role=actor_role, expected_epoch=expected_epoch)
+            return self._text({"status": "KILL_SWITCH_CLEARED", "project_id": self.project.id, "kill_switch": st})
+        if name == "openline_kill_switch_audit":
+            from kill_switch_auditor import audit_directory, audit_evidence_file
+            target = Path(args["evidence_path"]).resolve()
+            rep = audit_directory(target) if target.is_dir() else audit_evidence_file(target)
+            return self._text(rep)
         if name == "openline_doctor":
             cont = continuity_audit(Path(self.config["project_db"]))
             boundary = check_receiver_boundary(
@@ -280,6 +404,7 @@ class Server:
                 "project_id": self.project.id,
                 "boundary_issues": boundary,
                 "continuity": cont["assessment"],
+                "kill_switch": self.project.read_stop_state(),
                 "runtimes": {n: bool(shutil.which(n)) for n in ("codex", "claude", "aider", "opencode", "hermes")},
             })
         return self._text({"error": f"unknown tool: {name}"}, is_error=True)

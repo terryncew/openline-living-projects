@@ -32,6 +32,8 @@ def audit(project_db: Path) -> dict:
             refs=db.execute('SELECT deliverable_id,depends_on FROM dependencies ORDER BY deliverable_id,depends_on').fetchall()
             assign_rows=db.execute('SELECT id,deliverable_id FROM assignments').fetchall()
             events=db.execute('SELECT seq,kind,payload FROM events ORDER BY seq').fetchall()
+            has_hashes=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='event_hashes'").fetchone()
+            event_hashes=db.execute('SELECT seq,prev_sha256,event_sha256 FROM event_hashes ORDER BY seq').fetchall() if has_hashes else []
             db.commit()
     except sqlite3.Error as exc:
         raise ContinuityRefused('project_db_unreadable') from exc
@@ -71,6 +73,18 @@ def audit(project_db: Path) -> dict:
             changes.append((seq,event))
     except (ValueError,TypeError) as exc:
         raise ContinuityRefused('invalid_change_event') from exc
+    if has_hashes and event_hashes:
+        import hashlib
+        if len(events) != len(event_hashes):
+            raise ContinuityRefused('event_log_tampered')
+        expected_prev = '0' * 64
+        for (seq, kind, blob), (h_seq, prev_sha, ev_sha) in zip(events, event_hashes):
+            if seq != h_seq or prev_sha != expected_prev:
+                raise ContinuityRefused('event_log_tampered')
+            raw_canon = json.dumps({'seq': seq, 'prev_sha256': prev_sha, 'kind': kind, 'payload': blob}, separators=(',', ':'), sort_keys=True, ensure_ascii=False).encode()
+            if hashlib.sha256(raw_canon).hexdigest() != ev_sha:
+                raise ContinuityRefused('event_log_tampered')
+            expected_prev = ev_sha
     rows=[]
     for name,standing,head in deliveries:
         since=settled_seq.get(name,0)

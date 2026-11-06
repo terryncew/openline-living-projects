@@ -1,0 +1,456 @@
+[
+  {
+    "control": "control.assign",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "req-31fdacc5a926445fbda748a6ff3a9f14",
+      "request_sha256": "fc2f366bd0c50f63054e64e7197bc534b60c70ee912e6aef9b11fe06a3b54c5a",
+      "result": {
+        "allowed_paths": [
+          "app/price.py"
+        ],
+        "assignment": "repair-ovn",
+        "basis": "invoice_v2",
+        "deliverable": "invoice-feature",
+        "status": "ASSIGNED",
+        "worker": "bob"
+      },
+      "result_sha256": "9e14f2b68f7ada7433ca776a5e95bd504f3c82d9f510ba2ba5ca51524a2c3a0f",
+      "schema": "openline.ipc.response.v1",
+      "signature": "7a64d1a4d3d4c81b6cac1e82b279e9801ac0091ac26c8ae8aad1e47fcdca65a2805f3d92bbe6ad9cca99990a05a919e143085567bad20a861ed0e22ccd532606",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "assignment.prepare",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-746e5e7ef072f906",
+      "request_sha256": "01be0f1ddea759f8c6c07d95acffa2db5874fef5605868e2a896b552ca75ee7b",
+      "result": {
+        "allowed_paths": [
+          "app/price.py"
+        ],
+        "assignment": "repair-ovn",
+        "base_db_hash": "3df73d7049507933770402420f5589ee4cc336e91ba4ba672f7e23df46ea7f1d",
+        "base_head": "01da228b3bc6daaaf5e0a1f29c8eeceb3eb2efd8",
+        "manifest": {
+          "files": [
+            {
+              "mode": "100644",
+              "path": "app/independent.py",
+              "sha256": "8b323159c4051179429b897de7352f27d44b533928edcf9b2811c36154975536",
+              "size": 43
+            },
+            {
+              "mode": "100644",
+              "path": "app/price.py",
+              "sha256": "81b5f9c16951f597f6b48688841c06a82389af599c8689a44075a186c03ae0c4",
+              "size": 36
+            }
+          ],
+          "snapshot_db": {
+            "sha256": "2977c027c3a4026e8f098ced74a915cd5f979c1509939d54669007da030bbb73",
+            "size": 12288
+          }
+        },
+        "proposed_memory": null,
+        "status": "PREPARED"
+      },
+      "result_sha256": "18d1a5cc872ef91e97179ed4a08cb637748c9ddda77159781d01fee3f53abd28",
+      "schema": "openline.ipc.response.v1",
+      "signature": "cafddafaa2d74e65bcfce9242290c8eb278c02e983261b13fb09aae76c1c56717230a02147613f50c12c35605c38529f7acf4cabdeebe37f4325de10c17d9e0c",
+      "status": "OK"
+    }
+  },
+  {
+    "receiver_observation": {
+      "key_sha256": "618f5f6e9a7fba5d5618bb8b04deb36fabfab5b321cf4d49e4a9a377ef38c828",
+      "accepted": "01da228b3bc6daaaf5e0a1f29c8eeceb3eb2efd8",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-2a46e3d27987289c",
+      "request_sha256": "f33475f9d2add51089db8d0863c930244755fa7cbe3cba6b58c473b45228c6ee",
+      "result": {
+        "chunk_sha256": "81b5f9c16951f597f6b48688841c06a82389af599c8689a44075a186c03ae0c4",
+        "data_b64": "ZGVmIHRvdGFsKHF0eSk6CiAgICByZXR1cm4gcXR5ICogMTAK",
+        "eof": true,
+        "length": 36,
+        "offset": 0,
+        "status": "OK",
+        "target": "app/price.py",
+        "total_size": 36
+      },
+      "result_sha256": "445fd1df944ca220befbc81f5af493be75c41e7a0f1eef9bfd4f03550f45c31c",
+      "schema": "openline.ipc.response.v1",
+      "signature": "898ba1418e28a47fd16d94a44971e23665871dab06b599af6f7fd94602346e1e0e43b100a69d0541ab0426b67e8e2ee626ff485fe9fb13a415a4a15392a4a407",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-fdb549690437190a",
+      "request_sha256": "af874a83f46f5f3f9131283e8a81b6fdc3eaa60f9ec54dcf1083d217277fb958",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "a07019b6ebdf6fd091818db8e87bb2e4786fff977824a16f7ba4460d7fd408d71fe87d897fbb32db4e9622114931ad1d557e628a67d7029782f4d3c9c0ca0e0d",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": true,
+      "request_id": "r-fdb549690437190a",
+      "request_sha256": "af874a83f46f5f3f9131283e8a81b6fdc3eaa60f9ec54dcf1083d217277fb958",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "6e8751045134c8fad88fed0a8c021257a3572f16101f396b11a53a813e61eec6bc43049ff1398fef6b719c173edca453e122fdb483c35d43d21f0af1610ab30d",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-f9f7f3612665bae5",
+      "request_sha256": "11805550a65fb05414a9ae21e99a9308259a4d061b3db8246ee0eb661efedbc4",
+      "result": {
+        "error": "git_metadata_chunk_forbidden",
+        "reason": "git_metadata_chunk_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "3ea52f2e559ce2607b343796c4bb864dc2f056d0e576be00b281abc514c79aa9",
+      "schema": "openline.ipc.response.v1",
+      "signature": "5df9af151f7527ddb7615ad233592fbb66a48ccbbf7fea54555d427aba798807a1c6e39d387b0ff4bf098858b91857452b9b166086c6f7774d455785131ccc0a",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": true,
+      "request_id": "r-f9f7f3612665bae5",
+      "request_sha256": "11805550a65fb05414a9ae21e99a9308259a4d061b3db8246ee0eb661efedbc4",
+      "result": {
+        "error": "git_metadata_chunk_forbidden",
+        "reason": "git_metadata_chunk_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "3ea52f2e559ce2607b343796c4bb864dc2f056d0e576be00b281abc514c79aa9",
+      "schema": "openline.ipc.response.v1",
+      "signature": "3f2c390def0d2035381cabd4d1a18edd70590997e967620a4d77c106733663c59829a1a929c3a5c5d4a74dd37f3e256294e7a30cb7f55860485c02cd31005f04",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-c65b0a1c5da8cfa0",
+      "request_sha256": "aaaaa4831ca9e76b8b4652cd8164dbd4d2c77dff9edd34207544d91018a08ba2",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "52d3052f66b237c02efe0802190214142f30f24dbd10146111a21be217ca93ea70d76e87cbd0ec6c81f2a1ad0852c3f51fb73948acf512c14e8fd9019b49420e",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975272,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": true,
+      "request_id": "r-c65b0a1c5da8cfa0",
+      "request_sha256": "aaaaa4831ca9e76b8b4652cd8164dbd4d2c77dff9edd34207544d91018a08ba2",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "0e6a6aed0c408688b208320c06f92e4736f6d53ec4a76097c0eb29b83cbbda08025b7e982cbceb0e6aaea7a21e0860031704accfcb67f0678e48eba59b11d904",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975273,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-74c002d54914d5a6",
+      "request_sha256": "b32890b12b5a76f80d9e7e5e98335b9755a88711c4c4b2c174a1ea91dbe7f7b9",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "cdb52b9f1f59c1ae177ed9db06fdbf01adf90fd68a60d54163aaea831f49a7bdc026cdc2f193f82437176e76d3da565daadf0f7b2bdd0d1b15512172ba12d50d",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975273,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": true,
+      "request_id": "r-74c002d54914d5a6",
+      "request_sha256": "b32890b12b5a76f80d9e7e5e98335b9755a88711c4c4b2c174a1ea91dbe7f7b9",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "ec4cca1386c74a2c3554f87b85622126dccc120a357cc18cd0e8d75d615904efdbb63ee8a6e258e04eeef56bf34315d77879be766bcdf25f5870643ef6591a0f",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975273,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-b7af841247fb4977",
+      "request_sha256": "7536a04c84a50bc9f8c2368bfed2f168d10dc016bed6ab5e7201e956b75e0e95",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "b2f0c72d2a1899f4a6120a5469e8995e1edd908badfa050c35338c0075a96b199f892ba0631df087c03d32b378255ff3e455d1294140328af7102a0d1a0e0b04",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975273,
+      "code": "OUT_OF_SCOPE_PATH",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": true,
+      "request_id": "r-b7af841247fb4977",
+      "request_sha256": "7536a04c84a50bc9f8c2368bfed2f168d10dc016bed6ab5e7201e956b75e0e95",
+      "result": {
+        "error": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "reason": "chunk_read_rejected:dot_or_empty_path_segment_forbidden",
+        "status": "REFUSED"
+      },
+      "result_sha256": "8c494abd50b653d4cf0b7ef0ab51c7aab1c982aa7e8d3fabf87aa58f0c067772",
+      "schema": "openline.ipc.response.v1",
+      "signature": "8650e7608146eaed3f80c1a624b48471df1f3a8d09c61185b31dc3ec8833ca944c898e5cd75ebbe6a8a50720a90a27cd4849a15f81bf935226cdcd972c204b07",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975273,
+      "code": "MALFORMED_ENVELOPE",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-dbb9855cf9757679",
+      "request_sha256": "7f87dbe4dde22f16e80624ce19a3e7c470bfdbd0dfc4764ccff2f7417bf17d22",
+      "result": {
+        "error": "invalid_chunk_offset",
+        "reason": "invalid_chunk_offset",
+        "status": "REFUSED"
+      },
+      "result_sha256": "117b1faa9989f6996e445e3504093b3757fc442b6c88b21bc73852c6ecde4018",
+      "schema": "openline.ipc.response.v1",
+      "signature": "a21c1e664becf8cdc3fe14447d5bd39996839b9fb942fd9b280dc86ecd375130f7505f10cfa01f9eafe71fdd7bacc781dd8680340a55f385172ad0bd11b93709",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "control": "control.stop",
+    "response": {
+      "at_unix": 1793975273,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "req-7a66e8a962034bea93e5ebe833886e7e",
+      "request_sha256": "517396c0ffe51e095eb45a65d175ce7a004d88ab994f565221f991f22c8c453a",
+      "result": {
+        "kill_switch": {
+          "clear_seq": 0,
+          "epoch": 2,
+          "reason": "ovn-stop",
+          "stop_seq": 15,
+          "stopped": true
+        },
+        "preempted_validators": 1,
+        "project_id": "openline-prod-p1",
+        "status": "KILL_SWITCH_STOPPED"
+      },
+      "result_sha256": "a9dc69fbaf71ba79835b182900705154cbc739edacc7f7b76d118a3683dc1ff6",
+      "schema": "openline.ipc.response.v1",
+      "signature": "1ce3fe49e40b01d952f56c1209a1c99e9d8c084ac3f33e10aa70c139df1ae254612988d0a56574fb881f90c3a818503ea183a6cc4abdd6a44c005bb843353e0b",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "snapshot.chunk",
+    "response": {
+      "at_unix": 1793975273,
+      "code": "old_authority_dead",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "48058d813419a9d9a1916edc84ea786cc18fbfb47edfe064589b6de36c3a22d8",
+      "replayed": false,
+      "request_id": "r-29d571fc252cc7e9",
+      "request_sha256": "b71f32640b87e873b61288e806c69cabd20cb953b7d7607447993ab08248dc4e",
+      "result": {
+        "error": "old_authority_dead",
+        "reason": "old_authority_dead",
+        "status": "REFUSED"
+      },
+      "result_sha256": "11b2d6e377959146a1641500aa1d7e7a929eea46323aac3d2ecb7979013e2062",
+      "schema": "openline.ipc.response.v1",
+      "signature": "cb1ed5ec8e0da542a7037d5d6dc5e29998148a64bd170261498bc990137897fd68b75849e73721c957e81494b9780bf950fdd94cd5ee25fa1211490b9201b808",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "receiver_observation": {
+      "key_sha256": "618f5f6e9a7fba5d5618bb8b04deb36fabfab5b321cf4d49e4a9a377ef38c828",
+      "accepted": "01da228b3bc6daaaf5e0a1f29c8eeceb3eb2efd8",
+      "stop": {
+        "stopped": true,
+        "epoch": 2,
+        "stop_seq": 15,
+        "clear_seq": 0,
+        "reason": "ovn-stop"
+      },
+      "effects": []
+    }
+  }
+]

@@ -171,14 +171,25 @@ class LocalEffectStore:
         verify(delegation,buyer);verify(request,worker)
         if not db.execute('SELECT 1 FROM buyers WHERE buyer=?',(buyer,)).fetchone(): raise EffectDenied('buyer_not_registered')
         if db.execute('SELECT 1 FROM grants_revoked WHERE digest=?',(hash_of(delegation),)).fetchone(): raise EffectDenied('grant_revoked')
-        if not isinstance(g.get('expires'),int) or g['expires']<=self.clock(): raise EffectDenied('grant_expired')
+        if type(g.get('expires')) is not int or g['expires']<=self.clock(): raise EffectDenied('grant_expired')
         if g['task_id']!=task_id or g['mode']!=mode or r != {'kind':'repair.request.v1','worker':worker,
                 'task_id':task_id,'mode':mode,'payload_hash':hash_of(payload),'delegation_hash':hash_of(delegation)}:
             raise EffectDenied('request_not_delegated')
         if 'payload_hash' in g and g['payload_hash'] != hash_of(payload):
             raise EffectDenied('delegation_payload_mismatch')
-        if 'operation' in g and isinstance(payload, dict) and payload.get('action', payload.get('operation', g['operation'])) != g['operation']:
-            raise EffectDenied('delegation_operation_mismatch')
+        if 'operation' in g:
+            if not isinstance(g['operation'], str) or not g['operation'].strip():
+                raise EffectDenied('invalid_delegation_operation')
+            if not isinstance(payload, dict):
+                raise EffectDenied('delegation_operation_mismatch')
+            has_act = 'action' in payload
+            has_op = 'operation' in payload
+            if not has_act and not has_op:
+                raise EffectDenied('delegation_operation_mismatch')
+            if has_act and payload.get('action') != g['operation']:
+                raise EffectDenied('delegation_operation_mismatch')
+            if has_op and payload.get('operation') != g['operation']:
+                raise EffectDenied('delegation_operation_mismatch')
         if isinstance(payload, dict) and 'amount' in payload and payload['amount'] is not None:
             import math as _math
             amt = payload['amount']
@@ -194,8 +205,10 @@ class LocalEffectStore:
                 raise EffectDenied('delegation_amount_required')
             if payload['amount'] > g['max_amount'] or payload['amount'] <= 0:
                 raise EffectDenied('delegation_amount_exceeded')
-        if 'allowed_targets' in g and isinstance(payload, dict) and 'target' in payload:
-            if payload['target'] not in g['allowed_targets']:
+        if 'allowed_targets' in g:
+            if not isinstance(g['allowed_targets'], list) or not g['allowed_targets'] or any(not isinstance(t, str) or not t for t in g['allowed_targets']):
+                raise EffectDenied('invalid_delegation_targets')
+            if not isinstance(payload, dict) or not isinstance(payload.get('target'), str) or payload.get('target') not in g['allowed_targets']:
                 raise EffectDenied('delegation_target_not_allowed')
         # Guard against unscoped payload/amount forgery when buyer delegation omitted payload_hash/max_amount
         if isinstance(payload, dict) and 'payload_hash' not in g:

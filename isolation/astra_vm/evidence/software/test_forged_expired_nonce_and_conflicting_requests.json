@@ -1,0 +1,248 @@
+[
+  {
+    "receiver_observation": {
+      "key_sha256": "1ae5f1baa2c7868970c2e759f5688747818300a5448626f1394dca087964c997",
+      "accepted": "0940826f8c78f37898a830efd02005278ec5e0b0",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  },
+  {
+    "operation": "project.status",
+    "response": {
+      "at_unix": 1793975255,
+      "code": "SIGNATURE_INVALID",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+      "replayed": false,
+      "request_id": "r-30855dce949c2d4a",
+      "request_sha256": "a9cc57619390cb71456eebf530dc45acaf02491ab02056f70c990c8a58571f1c",
+      "result": {
+        "error": "ed25519_signature_invalid"
+      },
+      "result_sha256": "6dd6c4d18c4e0bfe2ad151b7f8108a7a07720ab89255e636d5e3142c32dac9c4",
+      "schema": "openline.ipc.response.v1",
+      "signature": "7933106b48de85a16c5e498f19dd58493d52fd69b65d16cfc6540eafcd9b102b4d53b61bd885fae697e70728953e0d72db887e104b9e8a4d6ca2bf8142158107",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "project.status",
+    "response": {
+      "at_unix": 1793975255,
+      "code": "EXPIRED_REQUEST",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+      "replayed": false,
+      "request_id": "r-efbd68f627a69093",
+      "request_sha256": "b8161e6c97a15accb3a4dcdf181a6639a737341e9cfb66e385db77c9d86a1690",
+      "result": {
+        "error": "request_expired"
+      },
+      "result_sha256": "62a7de482c319c26e46373bddb26b4ab68c66b7c787f46b87413f27c7bd273cc",
+      "schema": "openline.ipc.response.v1",
+      "signature": "5f679c42044576ac316626e38f959f731d638d11c5f633f59d5f6b72284bd870d1e257c9b24509fe910196b3d19b95cd014d92eb37e6caf108329a801ee8670f",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "project.status",
+    "response": {
+      "at_unix": 1793975256,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+      "replayed": false,
+      "request_id": "fixed",
+      "request_sha256": "3c0cd797970beb1a94f9f3808220a5e0de9a6091fcc4c8f5f214132420f333ca",
+      "result": {
+        "assignments": [],
+        "boundary": [],
+        "contract": "invoice_v2",
+        "deliverables": [
+          {
+            "accepted_head": "0940826f8c78f37898a830efd02005278ec5e0b0",
+            "id": "independent-formatter",
+            "member": "bob",
+            "standing": "CURRENT"
+          },
+          {
+            "accepted_head": "0940826f8c78f37898a830efd02005278ec5e0b0",
+            "id": "invoice-feature",
+            "member": "alice",
+            "standing": "REOPEN"
+          }
+        ],
+        "dependency_contracts": {
+          "format_v1": "format_v1",
+          "invoice_v1": "invoice_v2",
+          "invoice_v2": "invoice_v2"
+        },
+        "head": "0940826f8c78f37898a830efd02005278ec5e0b0",
+        "kill_switch": {
+          "clear_seq": 0,
+          "epoch": 1,
+          "reason": "init",
+          "stop_seq": 0,
+          "stopped": false
+        },
+        "members": [
+          {
+            "active": true,
+            "member": "alice"
+          },
+          {
+            "active": true,
+            "member": "bob"
+          }
+        ],
+        "project_id": "openline-prod-p1",
+        "project_status": "RECONSIDERATION",
+        "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+        "status": "OK"
+      },
+      "result_sha256": "aae2d74ad5ba6e801576c2936f5928fa9233c5176a47e24f726ae0e4daa3efac",
+      "schema": "openline.ipc.response.v1",
+      "signature": "ef00f6d4b2b3be4f3ff2b9c52b21f537049ee411b508ff41199431438d46febc303463ee9463888534134f4d4ae4a09805b6d32e79095fdf52cbf8a72e2aed09",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "project.status",
+    "response": {
+      "at_unix": 1793975256,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+      "replayed": true,
+      "request_id": "fixed",
+      "request_sha256": "3c0cd797970beb1a94f9f3808220a5e0de9a6091fcc4c8f5f214132420f333ca",
+      "result": {
+        "assignments": [],
+        "boundary": [],
+        "contract": "invoice_v2",
+        "deliverables": [
+          {
+            "accepted_head": "0940826f8c78f37898a830efd02005278ec5e0b0",
+            "id": "independent-formatter",
+            "member": "bob",
+            "standing": "CURRENT"
+          },
+          {
+            "accepted_head": "0940826f8c78f37898a830efd02005278ec5e0b0",
+            "id": "invoice-feature",
+            "member": "alice",
+            "standing": "REOPEN"
+          }
+        ],
+        "dependency_contracts": {
+          "format_v1": "format_v1",
+          "invoice_v1": "invoice_v2",
+          "invoice_v2": "invoice_v2"
+        },
+        "head": "0940826f8c78f37898a830efd02005278ec5e0b0",
+        "kill_switch": {
+          "clear_seq": 0,
+          "epoch": 1,
+          "reason": "init",
+          "stop_seq": 0,
+          "stopped": false
+        },
+        "members": [
+          {
+            "active": true,
+            "member": "alice"
+          },
+          {
+            "active": true,
+            "member": "bob"
+          }
+        ],
+        "project_id": "openline-prod-p1",
+        "project_status": "RECONSIDERATION",
+        "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+        "status": "OK"
+      },
+      "result_sha256": "aae2d74ad5ba6e801576c2936f5928fa9233c5176a47e24f726ae0e4daa3efac",
+      "schema": "openline.ipc.response.v1",
+      "signature": "3dcfff2b0ae4599b1c7ac3c340f6a7000692fb8fc876b75d47a3d731dfbf16940ca7bdbaa2116266e204f98ea47e0660ae4793b070415f6af70808d0dbae2606",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "project.status",
+    "response": {
+      "at_unix": 1793975256,
+      "code": "NONCE_REPLAY",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+      "replayed": false,
+      "request_id": "other",
+      "request_sha256": "d876fadf8b95df07af1f29a06762540d03bf92e714b456022a16a63f8f4873f2",
+      "result": {
+        "error": "nonce_replay_detected"
+      },
+      "result_sha256": "08d9f9c9dbed687b81873bf7d25dbcbde055d537e424b3b0fcb1bed60d137bca",
+      "schema": "openline.ipc.response.v1",
+      "signature": "259898d27dba0b2afcdb0aa7142a0b16ef2d34ea712fcd1a08b86fd57473170eea924d7148e9ec5df8d71d69e3b40d23fefc90086ac35b4fd9ff74603a603105",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "operation": "project.status",
+    "response": {
+      "at_unix": 1793975256,
+      "code": "IDEMPOTENCY_CONFLICT",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "66afd08e45ef916e17306ad13a9fc765ae30970b42bf04548feac0d035cf4d3b",
+      "replayed": false,
+      "request_id": "fixed",
+      "request_sha256": "9f9ae7c3610514722d39fbe883a7cd15c7c98ef75e819e9af6db6fbc6e0df5f2",
+      "result": {
+        "error": "idempotency_conflict_for_request_id"
+      },
+      "result_sha256": "6030641c6292333b3b95fc7dc4037234288993e022a24538077203c634dd7d4d",
+      "schema": "openline.ipc.response.v1",
+      "signature": "a39a64fc3efbe1852c77174d21191d069abfe0722a98e77ee87d873de004a261a3638570cd258b588d3b68e289c141760d5201a1e2f61934fcb35616e6886702",
+      "status": "REFUSED"
+    }
+  },
+  {
+    "receiver_observation": {
+      "key_sha256": "1ae5f1baa2c7868970c2e759f5688747818300a5448626f1394dca087964c997",
+      "accepted": "0940826f8c78f37898a830efd02005278ec5e0b0",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  }
+]

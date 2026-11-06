@@ -19,6 +19,7 @@ def load_engines() -> Path:
         "OPENLINE-AGENT-WATCHDOG-001",
         "OPENLINE-GRAPH-WATCHDOG-001/openline_graph_watchdog",
         "OPENLINE-TOE-GRAPH-EXPLORATION-001",
+        "OPENLINE-RECEIVER-ISOLATION-001",
     ):
         target = str(EXPERIMENTS / rel)
         if target not in sys.path:

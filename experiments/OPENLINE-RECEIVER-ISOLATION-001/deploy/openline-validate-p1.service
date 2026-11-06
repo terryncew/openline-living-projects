@@ -1,0 +1,29 @@
+[Unit]
+Description=OpenLine Unprivileged Candidate Validator Service (p1)
+
+[Service]
+Type=oneshot
+User=ol-validate-p1
+Group=ol-validate-p1
+SupplementaryGroups=ol-valspool-p1
+UMask=0027
+WorkingDirectory=/var/lib/openline/validation-spool
+ExecStart=/usr/bin/python3 -B /opt/openline/OPENLINE-RECEIVER-ISOLATION-001/validation_entry.py --job-dir /var/lib/openline/validation-spool/active
+
+# Validator has ZERO network access, ZERO socket access, and ZERO access to receiver state
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectSystem=strict
+ProtectHome=yes
+InaccessiblePaths=/var/lib/openline/projects /run/openline /var/lib/openline/workers
+ReadWritePaths=/var/lib/openline/validation-spool
+ReadOnlyPaths=/opt/openline
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=
+MemoryMax=512M
+TasksMax=32
+CPUQuota=100%
+TimeoutStartSec=35s

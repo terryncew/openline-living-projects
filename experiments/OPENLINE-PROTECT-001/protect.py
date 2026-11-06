@@ -6,6 +6,7 @@ never gives a worker access to ProjectLedger, SafePromotion or a signing key.
 It does not claim effects beyond the accepted Git ref and project ledger.
 """
 from __future__ import annotations
+from contextlib import closing
 import hashlib
 import json
 import os
@@ -14,7 +15,6 @@ import subprocess
 from pathlib import Path
 import time
 import uuid
-from contextlib import closing
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 SCHEMA = "openline.protect.incident.v1"
@@ -45,11 +45,18 @@ def _worker_group_ids(worker_uid: int) -> set[int]:
     except ImportError as exc:
         raise ProtectError("worker_group_membership_unverifiable") from exc
     try:
-        groups = {pwd.getpwuid(worker_uid).pw_gid}
+        pw = pwd.getpwuid(worker_uid)
+        groups = {pw.pw_gid}
+        worker_name = pw.pw_name
     except KeyError as exc:
         raise ProtectError("worker_uid_unknown") from exc
+    if hasattr(os, "getgrouplist"):
+        try:
+            groups.update(os.getgrouplist(worker_name, pw.pw_gid))
+        except OSError:
+            pass
     for entry in grp.getgrall():
-        if worker_uid in entry.gr_mem:
+        if worker_name in entry.gr_mem or worker_uid in entry.gr_mem:
             groups.add(entry.gr_gid)
     return groups
 
@@ -93,6 +100,11 @@ def check_receiver_boundary(paths, *, receiver_uid: int,
     for label, raw_path in paths:
         path = Path(raw_path)
         _check_one(label, path)
+        if label in ("project_db", "effects_db"):
+            for sidecar_suffix in ("-wal", "-shm", "-journal", ".gate.lock", ".control.sqlite"):
+                sc = Path(str(path) + sidecar_suffix)
+                if sc.exists() or sc.is_symlink():
+                    _check_one(label, sc)
         if label in ("promotion_state", "incidents") and path.is_dir() and not path.is_symlink():
             for sub in path.rglob("*"):
                 _check_one(label, sub)
@@ -117,6 +129,11 @@ class Protect:
             raise ProtectError("operator_pinned_acceptance_command_required")
         self.acceptance_cmd = acceptance_cmd
         self.project = project
+        try:
+            self.project.promotion._bound_project = self.project
+            self.project.promotion.require_final_gate = True
+        except Exception:
+            pass
         self.signer = receiver_signer
         # worker_uid=None preserves legacy callers (boundary unaudited).
         # Production admission MUST pass the worker UID: without it the
@@ -129,6 +146,36 @@ class Protect:
         self.receipts.mkdir(parents=True, exist_ok=True, mode=0o700)
         if not self.receipts.is_dir() or self.receipts.stat().st_mode & 0o077:
             raise ProtectError("receipt_directory_not_private")
+        self.cached_stop_state: dict = {"stopped": False, "epoch": 1, "stop_seq": 0, "clear_seq": 0}
+
+    def sync_stop_cache(self) -> dict:
+        """Refresh the receiver's local stop cache from authoritative ProjectLedger standing."""
+        if hasattr(self.project, "read_stop_state"):
+            st = self.project.read_stop_state()
+            self.cached_stop_state = dict(st)
+        return dict(self.cached_stop_state)
+
+    def preliminary_admit(self, assignment_id: str, *, use_stale_cache: bool = False) -> dict:
+        """Preliminary receiver admission check (never sufficient to authorize final Git CAS)."""
+        self._validate_assignment_id(assignment_id)
+        if use_stale_cache:
+            if self.cached_stop_state.get("stopped"):
+                return {
+                    "admitted": False,
+                    "decision": "REFUSE",
+                    "reason": f"STOPPED_AT_EPOCH_{self.cached_stop_state.get('epoch', 1)}",
+                    "cache_used": True,
+                }
+            return {
+                "admitted": True,
+                "decision": "PRELIMINARY_ADMIT",
+                "reason": "CACHED_STANDING_OK_NOT_FINAL_AUTHORITY",
+                "cache_used": True,
+                "cached_stop_state": dict(self.cached_stop_state),
+            }
+        if hasattr(self.project, "preliminary_admit"):
+            return self.project.preliminary_admit(assignment_id)
+        return {"admitted": True, "decision": "PRELIMINARY_ADMIT", "reason": "STANDING_OK"}
 
     def receiver_paths(self) -> list[tuple[str, Path]]:
         """Receiver-owned paths the worker must never write, directly."""
@@ -332,6 +379,11 @@ class Protect:
                     verdict = "UNKNOWN_RECONCILIATION_REQUIRED"
                     explanation = "project_reconciliation_exception:" + type(exc).__name__
         elif recovered.get("status") == "REFUSED" and expected_before == now:
+            if hasattr(self.project, "reconcile_pending_cas"):
+                try:
+                    self.project.reconcile_pending_cas()
+                except Exception:
+                    pass
             verdict = "STOPPED"
             explanation = recovered.get("reason") or "cas_not_applied"
         else:

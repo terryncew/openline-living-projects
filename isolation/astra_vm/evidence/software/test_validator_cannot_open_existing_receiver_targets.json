@@ -1,0 +1,8 @@
+[
+  {
+    "multi_uid_dac_probe": "NOT_TESTED_IN_SINGLE_UID_CONTAINER",
+    "container_uid": 1235,
+    "setresuid_65534_errno": 1,
+    "validator_protocol_target_path_refusal": "VERIFIED"
+  }
+]

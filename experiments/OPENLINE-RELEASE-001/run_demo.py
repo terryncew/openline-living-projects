@@ -150,7 +150,8 @@ def _git_file(accepted, ref_path):
         ["git", "--git-dir", str(accepted), "show",
          f"refs/heads/accepted:{ref_path}"],
         capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
+    if not (result.returncode == 0):
+        raise AssertionError(result.stderr)
     return result.stdout.strip()
 
 
@@ -161,7 +162,8 @@ def run_demo(project_dir: Path):
     rc = cli.cmd_init(_ns(dir=str(project_dir), project_id="openline-demo",
                           workers="alice,bob,carol", validator=None,
                           worker_uid=WORKER_UID))
-    assert rc == 0, rc
+    if not (rc == 0):
+        raise AssertionError(rc)
     config = cli._load_config(project_dir)
     promo, project, protect = cli._build_engines(config, WORKER_UID)
     head = lambda: promo.accepted()  # noqa: E731
@@ -172,24 +174,29 @@ def run_demo(project_dir: Path):
         checked = verify_receipt(out["receipt"], config["receiver_pub"],
                                  accepted_git=Path(config["accepted_git"]),
                                  project_db=Path(config["project_db"]))
-        assert checked["crypto"] == "VERIFIED", checked
+        if not (checked["crypto"] == "VERIFIED"):
+            raise AssertionError(checked)
         return checked
 
     # D1: forbidden change STOPPED.
-    assert cli.cmd_assign(_ns(dir=str(project_dir),
+    if not (cli.cmd_assign(_ns(dir=str(project_dir),
                               worker_uid=WORKER_UID, assignment="repair-v2",
                               worker="bob", basis="invoice_v2",
-                              as_member=None, signature=None)) == 0
+                              as_member=None, signature=None)) == 0):
+        raise AssertionError('demo invariant failure')
     state = promo.prepare("repair-v2")
     (Path(state["workspace"]) / "app" / "independent.py").write_text(
         'def label(value):\n    return "hacked"\n')
     head_before = head()
     out = protect.intercept("repair-v2")
-    assert out["verdict"] == "STOPPED", out
-    assert head() == head_before
-    assert _git_file(Path(config["accepted_git"]),
+    if not (out["verdict"] == "STOPPED"):
+        raise AssertionError(out)
+    if not (head() == head_before):
+        raise AssertionError('demo invariant failure')
+    if not (_git_file(Path(config["accepted_git"]),
                      "app/independent.py") == \
-        "def label(value):\n    return value.upper()"
+        "def label(value):\n    return value.upper()"):
+        raise AssertionError('demo invariant failure')
     verify(out)
     evidence["D1_forbidden"] = "STOPPED"
     print("D1 forbidden change STOPPED, head unchanged, receipt verified")
@@ -199,73 +206,93 @@ def run_demo(project_dir: Path):
     (Path(state["workspace"]) / "app" / "price.py").write_text(
         "def total(qty):\n    return qty * 11\n")
     out = protect.intercept("repair-v2")
-    assert out["verdict"] == "ACCEPTED", out
-    assert standings()["invoice-feature"] == "CURRENT"
+    if not (out["verdict"] == "ACCEPTED"):
+        raise AssertionError(out)
+    if not (standings()["invoice-feature"] == "CURRENT"):
+        raise AssertionError('demo invariant failure')
     checked = verify(out)
-    assert checked["git_verified"] and checked["continuity_verified"]
+    if not (checked["git_verified"] and checked["continuity_verified"]):
+        raise AssertionError('demo invariant failure')
     evidence["D2_authorized"] = {"verdict": "ACCEPTED", "head": head()}
     print("D2 authorized repair ACCEPTED, receipt verified (git + ledger)")
 
     # D3: falsifier UNKNOWN preserves the candidate.
-    assert cli.cmd_change(_ns(dir=str(project_dir),
+    if not (cli.cmd_change(_ns(dir=str(project_dir),
                               worker_uid=WORKER_UID,
                               dependency="invoice_v2",
                               contract="invoice_v2b",
-                              signature=None)) == 0
-    assert cli.cmd_assign(_ns(dir=str(project_dir),
+                              signature=None)) == 0):
+        raise AssertionError('demo invariant failure')
+    if not (cli.cmd_assign(_ns(dir=str(project_dir),
                               worker_uid=WORKER_UID, assignment="repair-v2b",
                               worker="bob", basis="invoice_v2b",
-                              as_member=None, signature=None)) == 0
+                              as_member=None, signature=None)) == 0):
+        raise AssertionError('demo invariant failure')
     state = promo.prepare("repair-v2b")
     workspace = Path(state["workspace"])
     fake = SimpleNamespace(outcome="REFUSED_SCOPE",
                            changes=("app/price.py",), details="")
     out = protect.intercept("repair-v2b", worker_result=fake)
-    assert out["verdict"] == "UNKNOWN_RECONCILIATION_REQUIRED", out
-    assert out["receipt"]["payload"]["candidate_inventory_source"] == \
-        "UNVERIFIED_WORKER_REPORT"
-    assert workspace.is_dir()
+    if not (out["verdict"] == "UNKNOWN_RECONCILIATION_REQUIRED"):
+        raise AssertionError(out)
+    if not (out["receipt"]["payload"]["candidate_inventory_source"] == \
+        "UNVERIFIED_WORKER_REPORT"):
+        raise AssertionError('demo invariant failure')
+    if not (workspace.is_dir()):
+        raise AssertionError('demo invariant failure')
     (workspace / "app" / "price.py").write_text(
         "def total(qty):\n    return qty * 12\n")
     out = protect.intercept("repair-v2b")
-    assert out["verdict"] == "ACCEPTED", out
+    if not (out["verdict"] == "ACCEPTED"):
+        raise AssertionError(out)
     evidence["D3_falsifier"] = "UNKNOWN_then_ACCEPTED_preserved"
     print("D3 falsifier UNKNOWN, candidate preserved, successor ACCEPTED")
 
     # D4: second disruption, revocation, replacement, selective reopen.
-    assert cli.cmd_change(_ns(dir=str(project_dir),
+    if not (cli.cmd_change(_ns(dir=str(project_dir),
                               worker_uid=WORKER_UID,
                               dependency="invoice_v2b",
                               contract="invoice_v3",
-                              signature=None)) == 0
-    assert standings()["independent-formatter"] == "CURRENT"
-    assert cli.cmd_assign(_ns(dir=str(project_dir),
+                              signature=None)) == 0):
+        raise AssertionError('demo invariant failure')
+    if not (standings()["independent-formatter"] == "CURRENT"):
+        raise AssertionError('demo invariant failure')
+    if not (cli.cmd_assign(_ns(dir=str(project_dir),
                               worker_uid=WORKER_UID, assignment="repair-v3",
                               worker="bob", basis="invoice_v3",
-                              as_member=None, signature=None)) == 0
+                              as_member=None, signature=None)) == 0):
+        raise AssertionError('demo invariant failure')
     abandoned = promo.prepare("repair-v3")
-    assert Path(abandoned["workspace"]).is_dir()
-    assert cli.cmd_revoke(_ns(dir=str(project_dir),
+    if not (Path(abandoned["workspace"]).is_dir()):
+        raise AssertionError('demo invariant failure')
+    if not (cli.cmd_revoke(_ns(dir=str(project_dir),
                               worker_uid=WORKER_UID, member="bob",
-                              signature=None)) == 0
+                              signature=None)) == 0):
+        raise AssertionError('demo invariant failure')
     out = protect.intercept("repair-v3")
-    assert out["verdict"] == "STOPPED", out
-    assert "member_not_active" in (out["receipt"]["payload"]["reason"] or "")
-    assert cli.cmd_assign(_ns(dir=str(project_dir),
+    if not (out["verdict"] == "STOPPED"):
+        raise AssertionError(out)
+    if not ("member_not_active" in (out["receipt"]["payload"]["reason"] or "")):
+        raise AssertionError('demo invariant failure')
+    if not (cli.cmd_assign(_ns(dir=str(project_dir),
                               worker_uid=WORKER_UID,
                               assignment="repair-v3-carol",
                               worker="carol", basis="invoice_v3",
-                              as_member=None, signature=None)) == 0
+                              as_member=None, signature=None)) == 0):
+        raise AssertionError('demo invariant failure')
     state = promo.prepare("repair-v3-carol")
     (Path(state["workspace"]) / "app" / "price.py").write_text(
         "def total(qty):\n    return qty * 13\n")
     out = protect.intercept("repair-v3-carol")
-    assert out["verdict"] == "ACCEPTED", out
-    assert standings() == {"invoice-feature": "CURRENT",
-                           "independent-formatter": "CURRENT"}
-    assert _git_file(Path(config["accepted_git"]),
+    if not (out["verdict"] == "ACCEPTED"):
+        raise AssertionError(out)
+    if not (standings() == {"invoice-feature": "CURRENT",
+                           "independent-formatter": "CURRENT"}):
+        raise AssertionError('demo invariant failure')
+    if not (_git_file(Path(config["accepted_git"]),
                      "app/independent.py") == \
-        "def label(value):\n    return value.upper()"
+        "def label(value):\n    return value.upper()"):
+        raise AssertionError('demo invariant failure')
     evidence["D4_second_disruption"] = "carol_ACCEPTED_unrelated_CURRENT"
     print("D4 second disruption: bob revoked+STOPPED, carol ACCEPTED, "
           "unrelated work CURRENT")
@@ -279,22 +306,27 @@ def run_demo(project_dir: Path):
                                     config["project_db"]),
                     worker_uid=os.getuid())
     out = gated.intercept("repair-v3-carol")
-    assert out["verdict"] == "UNKNOWN_RECONCILIATION_REQUIRED", out
-    assert "receiver_boundary_unavailable" in \
-        (out["receipt"]["payload"]["reason"] or "")
+    if not (out["verdict"] == "UNKNOWN_RECONCILIATION_REQUIRED"):
+        raise AssertionError(out)
+    if not ("receiver_boundary_unavailable" in \
+        (out["receipt"]["payload"]["reason"] or "")):
+        raise AssertionError('demo invariant failure')
     mode_before = os.stat(project.db_path).st_mode & 0o777
     os.chmod(project.db_path, 0o666)
     try:
         out = protect.intercept("repair-v3-carol")
     finally:
         os.chmod(project.db_path, mode_before)
-    assert out["verdict"] == "UNKNOWN_RECONCILIATION_REQUIRED", out
-    assert "project_db_world_writable" in \
-        (out["receipt"]["payload"]["reason"] or ""), out
+    if not (out["verdict"] == "UNKNOWN_RECONCILIATION_REQUIRED"):
+        raise AssertionError(out)
+    if not ("project_db_world_writable" in \
+        (out["receipt"]["payload"]["reason"] or "")):
+        raise AssertionError(out)
     reasons = check_receiver_boundary(
         protect.receiver_paths(), receiver_uid=os.getuid(),
         worker_uid=WORKER_UID)
-    assert reasons == [], reasons
+    if not (reasons == []):
+        raise AssertionError(reasons)
     evidence["D5_boundary"] = "same_uid_and_world_writable_refused"
     print("D5 boundary gate: same-UID + world-writable refuse, "
           "mission gate clean")
@@ -305,9 +337,11 @@ def run_demo(project_dir: Path):
         [sys.executable, str(script), "recover", "--dir", str(project_dir),
          "--assignment", "repair-v3-carol"],
         capture_output=True, text=True)
-    assert proc.returncode == 0, proc.stderr
+    if not (proc.returncode == 0):
+        raise AssertionError(proc.stderr)
     recovered = json.loads(proc.stdout)
-    assert recovered["status"] == "ACCEPTED", recovered
+    if not (recovered["status"] == "ACCEPTED"):
+        raise AssertionError(recovered)
     receipt_path = project_dir / "incidents" / \
         f"{recovered['incident_id']}.json"
     proc = subprocess.run(
@@ -317,7 +351,8 @@ def run_demo(project_dir: Path):
          "--git", config["accepted_git"],
          "--project-db", config["project_db"]],
         capture_output=True, text=True)
-    assert proc.returncode == 0, proc.stderr
+    if not (proc.returncode == 0):
+        raise AssertionError(proc.stderr)
     evidence["D6_cli_recover_verify"] = "ACCEPTED_via_real_CLI"
     print("D6 real CLI recover + verify: ACCEPTED")
 
@@ -325,13 +360,26 @@ def run_demo(project_dir: Path):
     rc = cli.cmd_effect_demo(_ns(dir=str(project_dir),
                                  worker_uid=WORKER_UID,
                                  assignment="repair-v3-carol"))
-    assert rc == 0, rc
+    if not (rc == 0):
+        raise AssertionError(rc)
     evidence["D7_effect_binding"] = "COMMITTED_stale_revoked_replay_recovery"
     print("D7 effect binding: COMMITTED, stale/revoked refused, "
           "replay + recovery identical")
 
     # D8: OS isolation probe + timeout (scripted workers, labeled).
-    if os.geteuid() == 0 and shutil.which("setpriv") and shutil.which("unshare"):
+    def _userns_chroot_available() -> bool:
+        if os.geteuid() != 0 or not shutil.which("setpriv") or not shutil.which("unshare"):
+            return False
+        try:
+            probe = subprocess.run(
+                [shutil.which("unshare"), "--user", "--map-users=0,0,65536", "--map-groups=0,0,65536", "--mount", "--net", "--pid", "--fork", "/bin/true"],
+                capture_output=True, timeout=5, check=False,
+            )
+            return probe.returncode == 0
+        except Exception:
+            return False
+
+    if _userns_chroot_available():
         probe_src = project_dir / "probe_src" / "app"
         probe_src.mkdir(parents=True)
         targets = [str(config["accepted_git"]), config["project_db"],
@@ -354,11 +402,13 @@ def run_demo(project_dir: Path):
         try:
             run = sandbox.run(["/usr/bin/python3", "/work/app/try_write.py",
                                *targets], timeout_s=30)
+            if not (run.outcome == "CANDIDATE"):
+                raise AssertionError(run)
             verdict = (sandbox.root / "work" / "app" / "result.txt").read_text()
         finally:
             sandbox.close()
-        assert run.outcome == "CANDIDATE", run
-        assert verdict == f"WRITE_BLOCKED:{len(targets)}/{len(targets)}"
+        if not (verdict == f"WRITE_BLOCKED:{len(targets)}/{len(targets)}"):
+            raise AssertionError('demo invariant failure')
         probe_sleep = project_dir / "probe_sleep" / "app"
         probe_sleep.mkdir(parents=True)
         (probe_sleep / "sleep.py").write_text("import time\ntime.sleep(30)\n")
@@ -370,7 +420,8 @@ def run_demo(project_dir: Path):
                                 timeout_s=1)
         finally:
             sandbox2.close()
-        assert run2.outcome == "TIMEOUT" and run2.exit_code == 124, run2
+        if not (run2.outcome == "TIMEOUT" and run2.exit_code == 124):
+            raise AssertionError(run2)
         evidence["D8_isolation"] = {"writes": verdict, "timeout": "TIMEOUT/124"}
         print("D8 isolation: worker writes blocked, sleeping worker "
               "group-killed on timeout")
@@ -384,10 +435,12 @@ def run_demo(project_dir: Path):
     original = config_file.read_bytes()
     try:
         config_file.write_bytes(original + b"\n# rogue same-uid write\n")
-        assert config_file.read_bytes() != original
+        if not (config_file.read_bytes() != original):
+            raise AssertionError('demo invariant failure')
     finally:
         config_file.write_bytes(original)
-    assert head() == head_before
+    if not (head() == head_before):
+        raise AssertionError('demo invariant failure')
     evidence["D9_deployment_condition"] = "same_uid_write_succeeds_restored"
     print("D9 deployment condition: same-UID direct write succeeds "
           "(restored); gate holds only under separate UIDs")

@@ -12,38 +12,110 @@ from pathlib import Path
 
 
 def parse_time(value):
-    return datetime.fromisoformat(value.replace('Z', '+00:00')).astimezone(timezone.utc)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError('invalid_timestamp')
+    dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+    if dt.tzinfo is None:
+        raise ValueError('timezone_offset_required')
+    return dt.astimezone(timezone.utc)
 
 
 def find_allowed(agent, tool, resource):
+    if not isinstance(tool, str) or not isinstance(resource, str) or not tool or not resource:
+        return False
     # Exact resource matching only. No path-prefix authorization shortcuts.
-    return any(item['tool'] == tool and item['resource'] == resource for item in agent.get('permissions', []))
+    return any(
+        isinstance(item, dict) and item.get('tool') == tool and item.get('resource') == resource
+        for item in agent.get('permissions', [])
+    )
 
 
-def classify_event(event, policy, seen_nonces):
-    agent = policy['agents'].get(event['agent'], None)
+def _check_evidence(ev_ref, ev_time, policy_evidence):
+    if ev_ref is None or ev_ref == '' or (isinstance(ev_ref, list) and len(ev_ref) == 0):
+        return ['STALE_OR_MISSING_EVIDENCE']
+    refs = ev_ref if isinstance(ev_ref, list) else [ev_ref]
+    if not all(isinstance(r, str) and r.strip() for r in refs):
+        return ['MALFORMED_EVIDENCE']
+    statuses = set()
     reasons = []
+    for r in refs:
+        entry = policy_evidence.get(r)
+        if not isinstance(entry, dict):
+            reasons.append('STALE_OR_MISSING_EVIDENCE')
+            continue
+        st = entry.get('status')
+        statuses.add(st)
+        if st == 'contradictory' or entry.get('contradicts'):
+            reasons.append('CONTRADICTORY_EVIDENCE')
+        elif st != 'valid':
+            reasons.append('STALE_OR_MISSING_EVIDENCE')
+        if entry.get('expires_at') and ev_time is not None:
+            try:
+                if ev_time >= parse_time(entry['expires_at']):
+                    reasons.append('EXPIRED_EVIDENCE')
+            except ValueError:
+                reasons.append('MALFORMED_EVIDENCE')
+    if len(statuses) > 1 and 'valid' in statuses:
+        reasons.append('CONTRADICTORY_EVIDENCE')
+    # Deduplicate preserving order
+    return list(dict.fromkeys(reasons))
+
+
+def classify_event(event, policy, seen_nonces, seen_ids=None):
+    if not isinstance(event, dict):
+        raise ValueError('event_must_be_dict')
+    ev_id = str(event.get('id', '')).strip()
+    ev_agent = str(event.get('agent', '')).strip()
+    ev_tool = str(event.get('tool', '')).strip()
+    ev_resource = str(event.get('resource', '')).strip()
+    ev_time_str = str(event.get('time', '')).strip()
+    reasons = []
+    if not ev_id or not ev_agent or not ev_tool or not ev_resource or not ev_time_str:
+        reasons.append('MALFORMED_EVENT')
+    ev_time = None
+    try:
+        ev_time = parse_time(ev_time_str)
+    except ValueError:
+        reasons.append('MALFORMED_TIMESTAMP')
+
+    if seen_ids is not None:
+        if ev_id in seen_ids:
+            reasons.append('DUPLICATE_EVENT_ID')
+        elif ev_id:
+            seen_ids.add(ev_id)
+
+    agent = policy.get('agents', {}).get(ev_agent, None)
     if agent is None:
         reasons.append('UNKNOWN_AGENT')
     else:
-        if agent.get('revoked_at') and parse_time(event['time']) >= parse_time(agent['revoked_at']):
-            reasons.append('REVOKED_IDENTITY')
-        if not find_allowed(agent, event['tool'], event['resource']):
+        if agent.get('revoked_at') and ev_time is not None:
+            try:
+                if ev_time >= parse_time(agent['revoked_at']):
+                    reasons.append('REVOKED_IDENTITY')
+            except ValueError:
+                reasons.append('MALFORMED_REVOCATION_TIME')
+        if not find_allowed(agent, ev_tool, ev_resource):
             reasons.append('OUT_OF_SCOPE')
-        if event.get('evidence'):
-            evidence = policy.get('evidence', {}).get(event['evidence'])
-            if evidence is None or evidence.get('status') != 'valid':
-                reasons.append('STALE_OR_MISSING_EVIDENCE')
-    nonce = (event['agent'], event.get('nonce'))
-    if event.get('nonce') and nonce in seen_nonces:
-        reasons.append('REPEATED_NONCE')
-    if event.get('nonce'):
+        if 'evidence' in event:
+            reasons.extend(_check_evidence(event.get('evidence'), ev_time, policy.get('evidence', {})))
+        elif ev_tool == 'repo.promote':
+            reasons.append('STALE_OR_MISSING_EVIDENCE')
+
+    raw_nonce = event.get('nonce')
+    if not isinstance(raw_nonce, str) or not raw_nonce.strip():
+        reasons.append('MISSING_OR_MALFORMED_NONCE')
+    else:
+        nonce = (ev_agent, raw_nonce)
+        if nonce in seen_nonces:
+            reasons.append('REPEATED_NONCE')
         seen_nonces.add(nonce)
+
+    reasons = list(dict.fromkeys(reasons))
     status = 'SCOPE_ALERT' if reasons else 'IN_SCOPE_REQUEST'
     # These are log claims, not receiver-verified execution receipts.
     return {
-        'id': event['id'], 'time': event['time'], 'agent': event['agent'],
-        'tool': event['tool'], 'resource': event['resource'],
+        'id': ev_id, 'time': ev_time_str, 'agent': ev_agent,
+        'tool': ev_tool, 'resource': ev_resource,
         'status': status, 'reasons': reasons,
         'effect_claim': event.get('effect_claim', 'unknown'),
         'effect_truth': 'UNKNOWN — source events are unsigned and not receiver-verified',
@@ -54,21 +126,33 @@ def assess_impact(policy):
     result=[]
     evidence=policy.get('evidence', {})
     for obj in policy.get('work', []):
-        if not obj.get('complete_dependencies', False):
+        deps = obj.get('dependencies', [])
+        if not obj.get('complete_dependencies', False) or not isinstance(deps, list) or len(deps) == 0:
             status='UNDETERMINED'
-        elif any(evidence.get(dep, {}).get('status') != 'valid' for dep in obj.get('dependencies', [])):
+        elif any(evidence.get(dep, {}).get('status') != 'valid' for dep in deps):
             status='REOPEN'
         else:
             status='RETAIN'
         result.append({'name': obj['name'], 'status': status,
-                       'dependencies': obj.get('dependencies', []),
+                       'dependencies': deps if isinstance(deps, list) else [],
                        'basis': 'declared demo dependencies only; not signed standing'})
     return result
 
 
+def _sort_key(event):
+    if not isinstance(event, dict):
+        return (datetime.min.replace(tzinfo=timezone.utc), '')
+    try:
+        t = parse_time(str(event.get('time', '')))
+    except ValueError:
+        t = datetime.min.replace(tzinfo=timezone.utc)
+    return (t, str(event.get('id', '')))
+
+
 def hunt(policy, events):
-    seen=set()
-    findings=[classify_event(e, policy, seen) for e in sorted(events, key=lambda x:(x['time'], x['id']))]
+    seen_nonces=set()
+    seen_ids=set()
+    findings=[classify_event(e, policy, seen_nonces, seen_ids) for e in sorted(events, key=_sort_key)]
     alerts=sum(f['status']=='SCOPE_ALERT' for f in findings)
     agents=sorted({f['agent'] for f in findings if f['status']=='SCOPE_ALERT'})
     return {'kind':'OPENLINE_AGENT_HUNT_LAB_SIMULATION', 'source_authenticity':'UNVERIFIED',

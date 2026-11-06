@@ -1,0 +1,201 @@
+[
+  {
+    "receiver_observation": {
+      "key_sha256": "cb75f1b1f93bd9034ae56caaad3b0dae6281f103bd213697844baffe4229aaf3",
+      "accepted": "25b8cb38fea8f84affb6c4cd036278451302f9d8",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  },
+  {
+    "control": "control.assign",
+    "response": {
+      "at_unix": 1793975240,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "99fcc6ae93cc66b9ddcebb673ae63e38ff404f84af40aac0aca68e1f72bdcddd",
+      "replayed": false,
+      "request_id": "req-e7837ee6e6c44e20b14d96509f561966",
+      "request_sha256": "43195d2801c52dec1566da45f1f834f763e0f7396935632d623131b5e13a3b47",
+      "result": {
+        "allowed_paths": [
+          "app/price.py"
+        ],
+        "assignment": "repair-1",
+        "basis": "invoice_v2",
+        "deliverable": "invoice-feature",
+        "status": "ASSIGNED",
+        "worker": "bob"
+      },
+      "result_sha256": "c5bab6fcc5b6a4b3df2e98198f1691cb54311c87ac74b524803fb1fceddddcef",
+      "schema": "openline.ipc.response.v1",
+      "signature": "d781f3f96b8ba46bc858d99c340383927c03a88a0aa0c9ffd2af6d47a549d0cd4651eda164a24f7b4b1bf2c1596272abf23b1c178b86fd3587ad34e7dcb27008",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "assignment.prepare",
+    "response": {
+      "at_unix": 1793975240,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "99fcc6ae93cc66b9ddcebb673ae63e38ff404f84af40aac0aca68e1f72bdcddd",
+      "replayed": false,
+      "request_id": "r-0445323935c94df7",
+      "request_sha256": "3b1a5f83672dfbc6e253cab54f4b1f58e1123ab2a54d8fe98b9eaf642f3c6726",
+      "result": {
+        "allowed_paths": [
+          "app/price.py"
+        ],
+        "assignment": "repair-1",
+        "base_db_hash": "3df73d7049507933770402420f5589ee4cc336e91ba4ba672f7e23df46ea7f1d",
+        "base_head": "25b8cb38fea8f84affb6c4cd036278451302f9d8",
+        "manifest": {
+          "files": [
+            {
+              "mode": "100644",
+              "path": "app/independent.py",
+              "sha256": "8b323159c4051179429b897de7352f27d44b533928edcf9b2811c36154975536",
+              "size": 43
+            },
+            {
+              "mode": "100644",
+              "path": "app/price.py",
+              "sha256": "81b5f9c16951f597f6b48688841c06a82389af599c8689a44075a186c03ae0c4",
+              "size": 36
+            }
+          ],
+          "snapshot_db": {
+            "sha256": "2977c027c3a4026e8f098ced74a915cd5f979c1509939d54669007da030bbb73",
+            "size": 12288
+          }
+        },
+        "proposed_memory": null,
+        "status": "PREPARED"
+      },
+      "result_sha256": "d38cadd66eb51423186d83e1087a30a4aa4e2ff41a309031b138b71ff1a2ebef",
+      "schema": "openline.ipc.response.v1",
+      "signature": "dde9e4259475e7eac8e4f8a6a903c36cf61e7b88f22ebd0c344fc7b4ab05c17a0366460df5471f647f0e3c6cd83febc42a4ee2b321a016854638e0e743f1f008",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "proposal.submit",
+    "response": {
+      "at_unix": 1793975242,
+      "code": "ACCEPTED",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": "07f7249ba95da10c52809e794cc6c16dcbb53e620473b16346debed61c8ec2fa",
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "99fcc6ae93cc66b9ddcebb673ae63e38ff404f84af40aac0aca68e1f72bdcddd",
+      "replayed": false,
+      "request_id": "r-37dce43a0ebe655d",
+      "request_sha256": "f1cba9c9a1da86eb104bfe706c82164ae19bba0c61382040a974b11b5cc66953",
+      "result": {
+        "accepted_ref_after": "b6f49f8e4e060a3016e5ef4c26e08eeef54bbf15",
+        "accepted_ref_before": "25b8cb38fea8f84affb6c4cd036278451302f9d8",
+        "assignment": "repair-1",
+        "incident_id": "2aa0cd1b630f40528fa2929b04164a2e",
+        "reason": null,
+        "receipt": {
+          "payload": {
+            "accepted_ref_after": "b6f49f8e4e060a3016e5ef4c26e08eeef54bbf15",
+            "accepted_ref_before": "25b8cb38fea8f84affb6c4cd036278451302f9d8",
+            "accepted_ref_unchanged": false,
+            "assignment": "repair-1",
+            "at_unix": 1793975242,
+            "authority": "RECEIVER_OWNED_SIGNED_ASSIGNMENT",
+            "candidate_inventory_source": "IPC_CANDIDATE_MANIFEST:35de1d8eb45f10ce",
+            "deployment_claim": "PRIVATE_DEMO_ONLY",
+            "external_effect_truth": "UNKNOWN",
+            "gate": "EXISTING_PROJECT_LEDGER_PROMOTE_REPAIR",
+            "incident_id": "2aa0cd1b630f40528fa2929b04164a2e",
+            "independent_git_observation_required": true,
+            "model_inference_evaluated": false,
+            "observed_candidate_paths": [
+              "app/price.py"
+            ],
+            "project_id": "openline-prod-p1",
+            "reason": null,
+            "receipt_scope": "LOCAL_ACCEPTED_GIT_REF_AND_PROJECT_LEDGER_ONLY",
+            "schema": "openline.protect.incident.v1",
+            "verdict": "ACCEPTED",
+            "worker_isolation_evaluated": false
+          },
+          "payload_sha256": "07f7249ba95da10c52809e794cc6c16dcbb53e620473b16346debed61c8ec2fa",
+          "receiver_pub_ed25519_hex": "99fcc6ae93cc66b9ddcebb673ae63e38ff404f84af40aac0aca68e1f72bdcddd",
+          "signature_ed25519_hex": "30830f3645cb6fbcb61b90e684cfe5c17240b8f5624f503f1edef0aea230ac11c6c51085e2bdc8c5a8027f72e48fa23a887523bf96b952293de561dea1b7d200"
+        },
+        "receipt_path": "/tmp/olvm-101x2iu4/fixture/receiver_state/incidents/2aa0cd1b630f40528fa2929b04164a2e.json",
+        "status": "ACCEPTED",
+        "verdict": "ACCEPTED"
+      },
+      "result_sha256": "3147b7b7c1a42fa16d7c88224d99948bdb3b6778f5d33015d4a347128c396cb7",
+      "schema": "openline.ipc.response.v1",
+      "signature": "2a1fa590badb05945bb8bf6cd9b8373f4603df271b804f91a2b0a8425d7e0f69802b848531557c8ce4f3b736c24b5ce2592c051b0d40a16e78f477acb450940e",
+      "status": "ACCEPTED"
+    }
+  },
+  {
+    "receiver_observation": {
+      "key_sha256": "cb75f1b1f93bd9034ae56caaad3b0dae6281f103bd213697844baffe4229aaf3",
+      "accepted": "b6f49f8e4e060a3016e5ef4c26e08eeef54bbf15",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  },
+  {
+    "independent_receipt_verification": {
+      "crypto": "VERIFIED",
+      "receiver": "99fcc6ae93cc66b9ddcebb673ae63e38ff404f84af40aac0aca68e1f72bdcddd",
+      "verdict": "ACCEPTED",
+      "incident_id": "2aa0cd1b630f40528fa2929b04164a2e",
+      "effect_truth": "NOT_INFERRED_FROM_RECEIPT",
+      "git_verified": true,
+      "accepted_git_head": "b6f49f8e4e060a3016e5ef4c26e08eeef54bbf15",
+      "continuity_verified": true,
+      "continuity_assessment": "NO_RECORDED_STALE_DEPENDENCY_FOUND"
+    }
+  },
+  {
+    "kernel_checked_validator": {
+      "aborted_by_stop": false,
+      "elapsed_ms": 182,
+      "elapsed_s": 0.182,
+      "exit": 0,
+      "job_id": "repair-1-9b0109db1f2c",
+      "reason": null,
+      "snapshot_mutated": false,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": "",
+      "timed_out": false,
+      "tree_mutated": false,
+      "validation_context_sha256": "292462add32767405490501bfc6fa2a0e3b2fb53a291161530f5c13d0cd49e1b",
+      "validator_pid": 13306,
+      "validator_uid": 1235
+    },
+    "multi_uid_host_support": false,
+    "native_openat2_kernel_support": false
+  }
+]

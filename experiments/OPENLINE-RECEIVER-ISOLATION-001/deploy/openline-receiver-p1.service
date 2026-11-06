@@ -1,0 +1,36 @@
+[Unit]
+Description=OpenLine Production Isolated Receiver Daemon (p1)
+After=network.target
+
+[Service]
+Type=simple
+User=ol-recv-p1
+Group=ol-recv-p1
+UMask=0077
+WorkingDirectory=/var/lib/openline/projects/p1
+ExecStart=/usr/bin/python3 -B /opt/openline/OPENLINE-RECEIVER-ISOLATION-001/receiver_service.py --config /etc/openline/p1/production_config.json
+Restart=on-failure
+RestartSec=2s
+
+# Systemd sandboxing & privilege hardening (Section 2.2 of Blueprint)
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+PrivateNetwork=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX
+ReadWritePaths=/var/lib/openline/projects/p1 /var/lib/openline/validation-spool /run/openline/p1
+ReadOnlyPaths=/opt/openline /etc/openline/p1
+
+[Install]
+WantedBy=multi-user.target

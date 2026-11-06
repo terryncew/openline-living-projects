@@ -1,3 +1,13 @@
+import sys as _sys; from pathlib import Path as _Path
+_AUTO_BOOTSTRAP_PATHS = [
+    _Path(__file__).resolve().parents[1],
+    _Path(__file__).resolve().parents[2] / 'SELF-HEALING-ENGINE-001',
+    _Path(__file__).resolve().parents[2] / 'SELF-HEALING-PROJECTS-001',
+    _Path(__file__).resolve().parents[2] / 'OPENLINE-PROTECT-001',
+]
+for _p in reversed(_AUTO_BOOTSTRAP_PATHS):
+    if _p.exists() and str(_p) not in _sys.path:
+        _sys.path.insert(0, str(_p))
 import json
 import sqlite3
 import tempfile

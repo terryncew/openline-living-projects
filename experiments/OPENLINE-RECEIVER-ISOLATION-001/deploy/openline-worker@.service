@@ -1,0 +1,26 @@
+[Unit]
+Description=OpenLine Untrusted Coding Worker Service (%i)
+After=openline-receiver-p1.service
+
+[Service]
+Type=simple
+User=ol-work-%i
+Group=ol-work-%i
+SupplementaryGroups=ol-sock-p1
+UMask=0077
+WorkingDirectory=/var/lib/openline/workers/%i
+Environment=OPENLINE_SERVICE_SOCKET=/run/openline/p1/worker.sock
+Environment=OPENLINE_PRINCIPAL_ID=worker:%i
+Environment=OPENLINE_CLIENT_KEY=/var/lib/openline/workers/%i/worker.key
+
+# Worker cannot traverse receiver state or validation spool
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+InaccessiblePaths=/var/lib/openline/projects /var/lib/openline/validation-spool /run/openline/p1/control.sock
+ReadWritePaths=/var/lib/openline/workers/%i
+BindReadOnlyPaths=/run/openline/p1/worker.sock
+CapabilityBoundingSet=
+AmbientCapabilities=

@@ -30,7 +30,7 @@ from cryptography.hazmat.primitives.serialization import (
 
 HERE = Path(__file__).resolve().parent
 EXP = HERE.parents[1]  # tests/ -> OPENLINE-PROTECT-001 -> experiments/
-for _extra in ("SELF-HEALING-ENGINE-001", "SELF-HEALING-PROJECTS-001",
+for _extra in ("OPENLINE-PROTECT-001", "SELF-HEALING-ENGINE-001", "SELF-HEALING-PROJECTS-001",
                "OPENLINE-PROTECT-002", "CODEX-B-ISOLATED-REPAIR-001"):
     _path = EXP / _extra
     if str(_path) not in sys.path:
@@ -563,12 +563,16 @@ class ArgonBlockerTests(unittest.TestCase):
         if receiver_uid == 0:
             grouped = root / "grouped.txt"
             grouped.write_text("x")
-            os.chown(grouped, 0, 65534)
-            os.chmod(grouped, 0o660)
-            reasons = check_receiver_boundary(
-                [("grouped", grouped)], receiver_uid=0,
-                worker_uid=65534)
-            self.assertIn("grouped_group_writable_by_worker", reasons)
+            try:
+                os.chown(grouped, 0, 65534)
+            except OSError:
+                pass
+            else:
+                os.chmod(grouped, 0o660)
+                reasons = check_receiver_boundary(
+                    [("grouped", grouped)], receiver_uid=0,
+                    worker_uid=65534)
+                self.assertIn("grouped_group_writable_by_worker", reasons)
             other_group = root / "other_group.txt"
             other_group.write_text("x")
             os.chown(other_group, 0, 0)
@@ -640,9 +644,10 @@ class ArgonBlockerTests(unittest.TestCase):
         finally:
             os.chmod(fix.project.db_path, 0o600)
 
-    @unittest.skipUnless(os.getuid() == 0 and shutil.which("setpriv")
-                         and shutil.which("unshare"),
-                         "OS isolation tests need root + setpriv/unshare")
+    @unittest.skipUnless(
+        os.getuid() == 0 and shutil.which("setpriv") and shutil.which("unshare")
+        and subprocess.run([shutil.which("unshare"), "--user", "--map-users=0,0,65536", "--map-groups=0,0,65536", "--mount", "--net", "--pid", "--fork", "/bin/true"], capture_output=True, timeout=5, check=False).returncode == 0,
+        "OS isolation tests need root + permitted userns/newuidmap")
     def test_v02_worker_cannot_write_receiver_paths(self):
         # The worker runs as nobody inside a chroot with no receiver
         # path mounted: every direct-write attempt must fail, while

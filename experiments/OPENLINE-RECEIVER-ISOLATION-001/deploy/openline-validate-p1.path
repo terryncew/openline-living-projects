@@ -1,0 +1,9 @@
+[Unit]
+Description=OpenLine Unprivileged Validator Spool Trigger (p1)
+
+[Path]
+PathExists=/var/lib/openline/validation-spool/active/request.json
+Unit=openline-validate-p1.service
+
+[Install]
+WantedBy=multi-user.target

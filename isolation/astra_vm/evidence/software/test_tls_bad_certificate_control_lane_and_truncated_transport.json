@@ -1,0 +1,95 @@
+[
+  {
+    "receiver_observation": {
+      "key_sha256": "af5029cd557e35451334033b857da718b5e49e05c7fb1106bce93198616e476f",
+      "accepted": "a654ff2ec15d57a0781bf7d05efa0b36ca3e7177",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  },
+  {
+    "receiver_observation": {
+      "key_sha256": "af5029cd557e35451334033b857da718b5e49e05c7fb1106bce93198616e476f",
+      "accepted": "a654ff2ec15d57a0781bf7d05efa0b36ca3e7177",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  },
+  {
+    "operation": "project.status",
+    "response": {
+      "at_unix": 1793975295,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "ed466fc35cda3655d39034fcecf221102afb77dfc3ed2c80aeaaa9c22ce2c8a1",
+      "replayed": false,
+      "request_id": "r-904c312ab23398cb",
+      "request_sha256": "a1937805b9e9a722f10b06b128fc37734585f4379d13eb9188e1ebc3af3c6e6e",
+      "result": {
+        "assignments": [],
+        "boundary": [],
+        "contract": "invoice_v2",
+        "deliverables": [
+          {
+            "accepted_head": "a654ff2ec15d57a0781bf7d05efa0b36ca3e7177",
+            "id": "independent-formatter",
+            "member": "bob",
+            "standing": "CURRENT"
+          },
+          {
+            "accepted_head": "a654ff2ec15d57a0781bf7d05efa0b36ca3e7177",
+            "id": "invoice-feature",
+            "member": "alice",
+            "standing": "REOPEN"
+          }
+        ],
+        "dependency_contracts": {
+          "format_v1": "format_v1",
+          "invoice_v1": "invoice_v2",
+          "invoice_v2": "invoice_v2"
+        },
+        "head": "a654ff2ec15d57a0781bf7d05efa0b36ca3e7177",
+        "kill_switch": {
+          "clear_seq": 0,
+          "epoch": 1,
+          "reason": "init",
+          "stop_seq": 0,
+          "stopped": false
+        },
+        "members": [
+          {
+            "active": true,
+            "member": "alice"
+          },
+          {
+            "active": true,
+            "member": "bob"
+          }
+        ],
+        "project_id": "openline-prod-p1",
+        "project_status": "RECONSIDERATION",
+        "receiver_pub": "ed466fc35cda3655d39034fcecf221102afb77dfc3ed2c80aeaaa9c22ce2c8a1",
+        "status": "OK"
+      },
+      "result_sha256": "b740ea6fcbd0986d0d02ca33661272e0d3e757a19e4e76458d875faff7ab0471",
+      "schema": "openline.ipc.response.v1",
+      "signature": "a792637078e2cbc4b8e0f400a657033ea97e25aa50aa26eaf1345160d64f777a11e7ead329346bcd16db78dd8b2eb96f6fa517c9c4f72b63f64a2626abf8f60a",
+      "status": "OK"
+    }
+  }
+]

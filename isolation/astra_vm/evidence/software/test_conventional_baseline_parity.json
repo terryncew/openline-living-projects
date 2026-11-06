@@ -1,0 +1,201 @@
+[
+  {
+    "control": "control.assign",
+    "response": {
+      "at_unix": 1793975247,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "1230a0e9deb680fb3ebc08ad1abb6235a097f4fdb11499b5bf94db7070de8db4",
+      "replayed": false,
+      "request_id": "req-5352f7bd1baa460bb5bdea30ede86175",
+      "request_sha256": "4414d84d8da3ee114c50ab4414ea39f90d4e664b7b12dc4c6b00742172fe4258",
+      "result": {
+        "allowed_paths": [
+          "app/price.py"
+        ],
+        "assignment": "repair-parity",
+        "basis": "invoice_v2",
+        "deliverable": "invoice-feature",
+        "status": "ASSIGNED",
+        "worker": "bob"
+      },
+      "result_sha256": "b58d32deae5cc5a2c1a7bfd0c97a54eff66f038a56119bf343295c542a4d314f",
+      "schema": "openline.ipc.response.v1",
+      "signature": "7cf2e547d2f53772847eeb789e3d45ca33ee8a9d1eb0b5c87a63842a8f78bd2b5acaf121e6787ffae5205edef096f4745676b5f50c1740fe44698395dda7c607",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "assignment.prepare",
+    "response": {
+      "at_unix": 1793975247,
+      "code": "OK",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": null,
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "1230a0e9deb680fb3ebc08ad1abb6235a097f4fdb11499b5bf94db7070de8db4",
+      "replayed": false,
+      "request_id": "r-42bc54ce34452d3a",
+      "request_sha256": "d379eea8354f004c9042864799d86801952e7b4d531cb55574010059c8ff62ab",
+      "result": {
+        "allowed_paths": [
+          "app/price.py"
+        ],
+        "assignment": "repair-parity",
+        "base_db_hash": "3df73d7049507933770402420f5589ee4cc336e91ba4ba672f7e23df46ea7f1d",
+        "base_head": "68ceff4042888decadb5738cca81ee87114b78e0",
+        "manifest": {
+          "files": [
+            {
+              "mode": "100644",
+              "path": "app/independent.py",
+              "sha256": "8b323159c4051179429b897de7352f27d44b533928edcf9b2811c36154975536",
+              "size": 43
+            },
+            {
+              "mode": "100644",
+              "path": "app/price.py",
+              "sha256": "81b5f9c16951f597f6b48688841c06a82389af599c8689a44075a186c03ae0c4",
+              "size": 36
+            }
+          ],
+          "snapshot_db": {
+            "sha256": "2977c027c3a4026e8f098ced74a915cd5f979c1509939d54669007da030bbb73",
+            "size": 12288
+          }
+        },
+        "proposed_memory": null,
+        "status": "PREPARED"
+      },
+      "result_sha256": "bde47de3b896685c68156e74c272dd46789f9391b3c2ab8c5c1b2882c80a7614",
+      "schema": "openline.ipc.response.v1",
+      "signature": "1bc254e6be056b409c7588dfdcfd8f616b9a025bb8a9d1dd8675e0e04737beae05cc1fb7005698f4e9843f1bce0906b1005778ed95b2b162d9e9c71ac377f708",
+      "status": "OK"
+    }
+  },
+  {
+    "operation": "proposal.submit",
+    "response": {
+      "at_unix": 1793975249,
+      "code": "STOPPED",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": "f87775d9d73266aa6be0ea18a02827f75d8c1832590196d6504eec12790c82b1",
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "1230a0e9deb680fb3ebc08ad1abb6235a097f4fdb11499b5bf94db7070de8db4",
+      "replayed": false,
+      "request_id": "r-c5f6eae77d39365e",
+      "request_sha256": "337f50ce4773b91facb2aeb259031f9e347a2bc5988b878a9cecaaa1faa7eea5",
+      "result": {
+        "accepted_ref_after": "68ceff4042888decadb5738cca81ee87114b78e0",
+        "accepted_ref_before": "68ceff4042888decadb5738cca81ee87114b78e0",
+        "assignment": "repair-parity",
+        "incident_id": "094bc895aacb4359ab297a25aed0b398",
+        "reason": "ValueError:independent_acceptance_failed",
+        "receipt": {
+          "payload": {
+            "accepted_ref_after": "68ceff4042888decadb5738cca81ee87114b78e0",
+            "accepted_ref_before": "68ceff4042888decadb5738cca81ee87114b78e0",
+            "accepted_ref_unchanged": true,
+            "assignment": "repair-parity",
+            "at_unix": 1793975249,
+            "authority": "RECEIVER_OWNED_SIGNED_ASSIGNMENT",
+            "candidate_inventory_source": "IPC_CANDIDATE_MANIFEST:56b38bbd3f38f944",
+            "deployment_claim": "PRIVATE_DEMO_ONLY",
+            "external_effect_truth": "UNKNOWN",
+            "gate": "EXISTING_PROJECT_LEDGER_PROMOTE_REPAIR",
+            "incident_id": "094bc895aacb4359ab297a25aed0b398",
+            "independent_git_observation_required": true,
+            "model_inference_evaluated": false,
+            "observed_candidate_paths": [
+              "app/price.py"
+            ],
+            "project_id": "openline-prod-p1",
+            "reason": "ValueError:independent_acceptance_failed",
+            "receipt_scope": "LOCAL_ACCEPTED_GIT_REF_AND_PROJECT_LEDGER_ONLY",
+            "schema": "openline.protect.incident.v1",
+            "verdict": "STOPPED",
+            "worker_isolation_evaluated": false
+          },
+          "payload_sha256": "f87775d9d73266aa6be0ea18a02827f75d8c1832590196d6504eec12790c82b1",
+          "receiver_pub_ed25519_hex": "1230a0e9deb680fb3ebc08ad1abb6235a097f4fdb11499b5bf94db7070de8db4",
+          "signature_ed25519_hex": "4bd5dc4b3fbc15c9004678bbd2b0b9fadea68f6355dff14de827f3172b992309c52f3cc7bb310f84d1b3ad80abab87f7ca71582d1e6a0126607b6adea1eca80f"
+        },
+        "receipt_path": "/tmp/olvm-ydcjxyfe/fixture/receiver_state/incidents/094bc895aacb4359ab297a25aed0b398.json",
+        "status": "STOPPED",
+        "verdict": "STOPPED"
+      },
+      "result_sha256": "7a79c253d33c2cc1c2602a211e9ac76f7401bcb6c268f761e4b16067c88ca34d",
+      "schema": "openline.ipc.response.v1",
+      "signature": "e83e75e84fae1d908f81e8caad6b6854afcb73946df4a0cdeaa6168bd7262ec9f686a9841739cad152a6fef5e68d277363c5baba073021503f1052ea338c7203",
+      "status": "STOPPED"
+    }
+  },
+  {
+    "operation": "proposal.submit",
+    "response": {
+      "at_unix": 1793975252,
+      "code": "ACCEPTED",
+      "deployment_id": "deploy-prod-001",
+      "project_id": "openline-prod-p1",
+      "receipt_sha256": "165a16fc9a61cf27e8645f63fc5118f8956baca733f0839a86a206f66e2da452",
+      "receiver_id": "receiver-p1",
+      "receiver_pub": "1230a0e9deb680fb3ebc08ad1abb6235a097f4fdb11499b5bf94db7070de8db4",
+      "replayed": false,
+      "request_id": "r-58ac4ebab7556e11",
+      "request_sha256": "23dec869325b20843919b1b2eeea3b1aeb1ab430ae0d1c826d5f96bc0fa58921",
+      "result": {
+        "accepted_ref_after": "7e61fa05f2e66ad7c0bec3a7ad668facdb481f95",
+        "accepted_ref_before": "68ceff4042888decadb5738cca81ee87114b78e0",
+        "assignment": "repair-parity",
+        "incident_id": "aa391ed851f64463add29617b74415bb",
+        "reason": null,
+        "receipt": {
+          "payload": {
+            "accepted_ref_after": "7e61fa05f2e66ad7c0bec3a7ad668facdb481f95",
+            "accepted_ref_before": "68ceff4042888decadb5738cca81ee87114b78e0",
+            "accepted_ref_unchanged": false,
+            "assignment": "repair-parity",
+            "at_unix": 1793975252,
+            "authority": "RECEIVER_OWNED_SIGNED_ASSIGNMENT",
+            "candidate_inventory_source": "IPC_CANDIDATE_MANIFEST:35de1d8eb45f10ce",
+            "deployment_claim": "PRIVATE_DEMO_ONLY",
+            "external_effect_truth": "UNKNOWN",
+            "gate": "EXISTING_PROJECT_LEDGER_PROMOTE_REPAIR",
+            "incident_id": "aa391ed851f64463add29617b74415bb",
+            "independent_git_observation_required": true,
+            "model_inference_evaluated": false,
+            "observed_candidate_paths": [
+              "app/price.py"
+            ],
+            "project_id": "openline-prod-p1",
+            "reason": null,
+            "receipt_scope": "LOCAL_ACCEPTED_GIT_REF_AND_PROJECT_LEDGER_ONLY",
+            "schema": "openline.protect.incident.v1",
+            "verdict": "ACCEPTED",
+            "worker_isolation_evaluated": false
+          },
+          "payload_sha256": "165a16fc9a61cf27e8645f63fc5118f8956baca733f0839a86a206f66e2da452",
+          "receiver_pub_ed25519_hex": "1230a0e9deb680fb3ebc08ad1abb6235a097f4fdb11499b5bf94db7070de8db4",
+          "signature_ed25519_hex": "31932ad91b19b0b666559daf1e8b6ee297f11e089a57648334bdd3920c37f1855eea7c20717e35bde08eb14366bccbae6fda58756b40bb5ef726ad51c91e9f04"
+        },
+        "receipt_path": "/tmp/olvm-ydcjxyfe/fixture/receiver_state/incidents/aa391ed851f64463add29617b74415bb.json",
+        "status": "ACCEPTED",
+        "verdict": "ACCEPTED"
+      },
+      "result_sha256": "803cd1048c488e09dae52d6fd97f63209de11c71d2debff29000dec8cf1d8078",
+      "schema": "openline.ipc.response.v1",
+      "signature": "cc4fff0eb6c902ed7370cc406f6acc3c9f850724bc9e033ad6936f84cae16ebef35b5686a36d02a3db80e92029e23a1b16038d996ecbc2d1648c0c2957925607",
+      "status": "ACCEPTED"
+    }
+  },
+  {
+    "conventional_baseline": "PARITY",
+    "invalid_rejected_both": true,
+    "valid_accepted_both": true
+  }
+]

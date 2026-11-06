@@ -6,7 +6,7 @@ Every authorization decision is made by the existing receiver-owned engines
   - Stage 2: One accepted project state (ProjectLedger + CRYPTOGRAPHICALLY_BOUND vs UNTRUSTED_ADVISORY Claim Graph)
   - Stage 3: Swarm, Coach & Verified Memory RSI loop (CANDIDATE -> INHERITED / QUARANTINED -> QUESTIONED)
   - Stage 4: Unified CLI/MCP experience (init, status, graph, change, assign, prepare, intercept,
-             verify, recover, revoke, rotate-key, memory, history, doctor, guard, replay, mcp)
+             verify, recover, revoke, rotate-key, memory, history, doctor, guard, kill-switch, replay, mcp)
 
 Exit codes: 0 ACCEPTED/success, 3 STOPPED, 4 UNKNOWN, 2 usage or engine refusal.
 """
@@ -86,6 +86,37 @@ def _save_config(project_dir: Path, config: dict) -> None:
     (project_dir / "config.json").write_text(json.dumps(config, sort_keys=True, indent=2) + "\n")
 
 
+
+def _get_ipc_client(args, config: dict, *, channel: str = "worker"):
+    sock_path = getattr(args, "service_socket", None) or os.environ.get("OPENLINE_SERVICE_SOCKET") or config.get("service_socket")
+    if not sock_path:
+        return None
+    from ipc_client import OpenLineIPCClient
+    key_path = getattr(args, "client_key", None) or os.environ.get("OPENLINE_CLIENT_KEY") or config.get("client_key")
+    if not key_path:
+        raise RuntimeError("--client-key or OPENLINE_CLIENT_KEY is required in --service-socket mode")
+    signer_key = _read_key(Path(key_path))
+    principal_id = (
+        getattr(args, "principal_id", None)
+        or os.environ.get("OPENLINE_PRINCIPAL_ID")
+        or config.get("principal_id")
+        or ("control:owner" if channel == "control" else "worker:bob")
+    )
+    pinned_pub = config.get("receiver_pub")
+    if not pinned_pub:
+        pinned_file = Path(config["dir"]) / "PINNED_RECEIVER_PUBLIC_KEY.hex"
+        pinned_pub = pinned_file.read_text().strip()
+    return OpenLineIPCClient(
+        socket_path=Path(sock_path),
+        channel=channel,
+        deployment_id=config.get("deployment_id", "openline-prod-1"),
+        project_id=config["project_id"],
+        receiver_id=config.get("receiver_id", "receiver-p1"),
+        principal_id=principal_id,
+        signer_key=signer_key,
+        pinned_receiver_pub=pinned_pub,
+    )
+
 def _build_engines(config: dict, worker_uid: int):
     key_file = Path(config["key_file"])
     receiver_key = _read_key(key_file)
@@ -98,12 +129,20 @@ def _build_engines(config: dict, worker_uid: int):
     if config.get("receiver_pub") and actual_pub != config["receiver_pub"]:
         raise ProtectError("receiver_key_mismatch_with_pinned_pub")
 
-    promo = SafePromotion(Path(config["accepted_git"]), Path(config["effects_db"]), Path(config["promotion_dir"]))
+    owner_key_path = Path(config.get("keys_dir", "")) / "owner.key" if config.get("keys_dir") else None
+    if owner_key_path and owner_key_path.is_file():
+        owner_pub = _pub(_read_key(owner_key_path))
+    elif config.get("owner_pub"):
+        owner_pub = config["owner_pub"]
+    else:
+        pinned_owner_file = Path(config["dir"]) / "PINNED_OWNER_PUBLIC_KEY.hex"
+        owner_pub = pinned_owner_file.read_text().strip()
+    promo = SafePromotion(Path(config["accepted_git"]), Path(config["effects_db"]), Path(config["promotion_dir"]), require_final_gate=True)
     project = ProjectLedger(
         Path(config["project_db"]),
         config["project_id"],
         config.get("objective", "OpenLine project"),
-        _pub(_read_key(Path(config["keys_dir"]) / "owner.key")),
+        owner_pub,
         promotion=promo,
         world_verifier=lambda receipt, invitation: receipt.get("member") == invitation.get("member_id"),
     )
@@ -157,7 +196,7 @@ def cmd_init(args) -> int:
     with closing(sqlite3.connect(live_db)) as db:
         db.execute("CREATE TABLE effects(id TEXT PRIMARY KEY, value INTEGER)")
         db.commit()
-    promo = SafePromotion(accepted, live_db, project_dir / "promotion")
+    promo = SafePromotion(accepted, live_db, project_dir / "promotion", require_final_gate=True)
     keys_dir = project_dir / "keys"
     keys_dir.mkdir()
     owner = Ed25519PrivateKey.generate()
@@ -243,6 +282,7 @@ def cmd_init(args) -> int:
         "incidents_dir": str(project_dir / "incidents"),
         "keys_dir": str(keys_dir),
         "key_file": str(key_file),
+        "owner_pub": _pub(owner),
         "receiver_pub": _pub(receiver_key),
         "validator": str(validator),
         "members": workers,
@@ -294,7 +334,31 @@ def cmd_assign(args) -> int:
         if not key_path.is_file():
             return _fail(f"no local key for contributor {contributor}; pass --signature for out-of-band signing")
         signature = _sig(_read_key(key_path), claim)
-    project.assign_repair(args.assignment, target_deliv, args.worker, args.basis, signature, allowed_paths=allowed_paths)
+    post_stop_sig = getattr(args, "post_stop_signature", None)
+    if not post_stop_sig and getattr(args, "post_stop_owner_sign", False):
+        st = project.read_stop_state()
+        owner_key = _read_key(Path(config["keys_dir"]) / "owner.key")
+        override_claim = {
+            "project_id": project.id,
+            "assignment_id": args.assignment,
+            "deliverable_id": target_deliv,
+            "worker_member": args.worker,
+            "basis": args.basis,
+            "allowed_paths": allowed_paths,
+            "epoch": st["epoch"],
+            "stop_seq": st["stop_seq"],
+            "action": "post_stop_grant",
+        }
+        post_stop_sig = _sig(owner_key, override_claim)
+    project.assign_repair(
+        args.assignment,
+        target_deliv,
+        args.worker,
+        args.basis,
+        signature,
+        allowed_paths=allowed_paths,
+        post_stop_owner_signature=post_stop_sig,
+    )
     _emit({
         "status": "ASSIGNED",
         "assignment": args.assignment,
@@ -303,6 +367,7 @@ def cmd_assign(args) -> int:
         "basis": args.basis,
         "allowed_paths": allowed_paths,
         "contributor": contributor,
+        "post_stop_override": bool(post_stop_sig),
     })
     return 0
 
@@ -310,6 +375,27 @@ def cmd_assign(args) -> int:
 def cmd_prepare(args) -> int:
     project_dir = Path(args.dir).resolve()
     config = _load_config(project_dir)
+    ipc = _get_ipc_client(args, config, channel="worker")
+    if ipc is not None:
+        dest_dir = Path(getattr(args, "client_workspace", None) or os.environ.get("OPENLINE_CLIENT_WORKSPACE") or (project_dir / f"client-{args.assignment}"))
+        resp = ipc.prepare_workspace(
+            args.assignment,
+            dest_dir,
+            propose_memory=getattr(args, "propose_memory", None),
+            diagnosis=getattr(args, "diagnosis", None),
+            lesson=getattr(args, "lesson", None),
+        )
+        if resp["status"] != "OK":
+            return _fail(resp["result"].get("error", resp["code"]))
+        _emit({
+            "status": "PREPARED",
+            "assignment": args.assignment,
+            "workspace": resp["result"]["client_workspace"],
+            "snapshot_db": resp["result"]["client_snapshot_db"],
+            "proposed_memory": resp["result"].get("proposed_memory"),
+            "ipc_verified": True,
+        })
+        return 0
     promo, project, _protect = _build_engines(config, args.worker_uid)
     state = promo.prepare(args.assignment)
     out = {"status": "PREPARED", "assignment": args.assignment, "workspace": state["workspace"]}
@@ -335,6 +421,23 @@ def cmd_prepare(args) -> int:
 def cmd_intercept(args) -> int:
     project_dir = Path(args.dir).resolve()
     config = _load_config(project_dir)
+    ipc = _get_ipc_client(args, config, channel="worker")
+    if ipc is not None:
+        ws_dir = Path(getattr(args, "client_workspace", None) or os.environ.get("OPENLINE_CLIENT_WORKSPACE") or (project_dir / f"client-{args.assignment}" / "workspace"))
+        resp = ipc.submit_workspace_proposal(args.assignment, ws_dir)
+        res = resp["result"]
+        if "verdict" not in res:
+            return _fail(res.get("error", resp["code"]))
+        _emit({
+            "status": res["verdict"],
+            "assignment": args.assignment,
+            "incident_id": res["incident_id"],
+            "receipt_path": res["receipt_path"],
+            "reason": res["reason"],
+            "accepted_ref_before": res["accepted_ref_before"],
+            "accepted_ref_after": res["accepted_ref_after"],
+        })
+        return {"ACCEPTED": 0, "STOPPED": 3, "UNKNOWN_RECONCILIATION_REQUIRED": 4}.get(res["verdict"], 2)
     _promo, _project, protect = _build_engines(config, args.worker_uid)
     out = protect.intercept(args.assignment)
     payload = out["receipt"]["payload"]
@@ -379,6 +482,13 @@ def cmd_verify(args) -> int:
 def cmd_status(args) -> int:
     project_dir = Path(args.dir).resolve()
     config = _load_config(project_dir)
+    ipc = _get_ipc_client(args, config, channel="worker")
+    if ipc is not None:
+        resp = ipc.call("project.status", {})
+        if resp["status"] != "OK":
+            return _fail(resp["result"].get("error", resp["code"]))
+        _emit(resp["result"])
+        return 0
     promo, project, protect = _build_engines(config, args.worker_uid)
     snap = project.snapshot()
     with closing(sqlite3.connect(project.db_path)) as db:
@@ -393,6 +503,7 @@ def cmd_status(args) -> int:
         "contract": snap["project"][2],
         "dependency_contracts": dep_contracts,
         "project_status": snap["project"][4],
+        "kill_switch": project.read_stop_state(),
         "members": members,
         "deliverables": [{"id": d[0], "member": d[1], "standing": d[2], "accepted_head": d[3]} for d in snap["deliverables"]],
         "assignments": [{"id": r[0], "worker": r[1], "basis": r[2], "state": r[3], "deliverable": r[4]} for r in rows],
@@ -549,6 +660,8 @@ def cmd_rotate_key(args) -> int:
         sig = args.signature or _sig(old_owner, claim)
         project.rotate_owner_key(new_pub, sig)
         _write_key(keys_dir / "owner.key", new_owner)
+        config["owner_pub"] = new_pub
+        _save_config(project_dir, config)
         _emit({"status": "OWNER_KEY_ROTATED", "new_owner_pub": new_pub})
         return 0
     else:
@@ -654,6 +767,7 @@ def cmd_doctor(args) -> int:
             guard_status = g["status"]
         except Exception as exc:
             guard_status = f"SEAL_INVALID:{exc}"
+    stop_st = project.read_stop_state()
     healthy = (
         not boundary
         and cont.get("assessment") == "NO_RECORDED_STALE_DEPENDENCY_FOUND"
@@ -669,6 +783,7 @@ def cmd_doctor(args) -> int:
         "continuity_assessment": cont.get("assessment"),
         "flagged_current_deliverables": cont.get("flagged_current_deliverables"),
         "living_verdict": obs["verdict"],
+        "kill_switch": stop_st,
         "receiver_guard_seal": guard_status,
         "coding_agent_clis_detected": runtimes,
     })
@@ -685,6 +800,61 @@ def cmd_guard(args) -> int:
         res = ReceiverGuard.seal(project_dir)
     _emit(res)
     return 0
+
+
+def cmd_kill_switch(args) -> int:
+    action = args.action
+    if action == "conformance":
+        from kill_switch import run_kill_switch_conformance
+        import tempfile
+        if getattr(args, "output_dir", None):
+            res = run_kill_switch_conformance(Path(args.output_dir).resolve(), race_iterations=int(args.races))
+        else:
+            with tempfile.TemporaryDirectory(prefix="openline-ks-conformance-") as tmp:
+                res = run_kill_switch_conformance(Path(tmp), race_iterations=int(args.races))
+        _emit(res)
+        return 0 if res.get("status") == "PASS" else 1
+    if action == "audit":
+        if not getattr(args, "evidence_path", None):
+            return _fail("--evidence-path is required when --action=audit")
+        from kill_switch_auditor import audit_directory, audit_evidence_file
+        target = Path(args.evidence_path).resolve()
+        res = audit_directory(target) if target.is_dir() else audit_evidence_file(target)
+        _emit(res)
+        ok = res.get("status") == "PASS" if target.is_dir() else res.get("valid") is True
+        return 0 if ok else 1
+    if not getattr(args, "dir", None):
+        return _fail("--dir is required for kill-switch status/stop/clear")
+    project_dir = Path(args.dir).resolve()
+    config = _load_config(project_dir)
+    _promo, project, _protect = _build_engines(config, args.worker_uid)
+    if action == "status":
+        st = project.read_stop_state()
+        _emit({"status": "OK", "project_id": project.id, "kill_switch": st})
+        return 0
+    reason = getattr(args, "reason", None) or ("owner_emergency_stop" if action == "stop" else "owner_clear_stop")
+    act_name = "issue_stop" if action == "stop" else "clear_stop"
+    epoch_arg = getattr(args, "expected_epoch", None)
+    sig = getattr(args, "signature", None)
+    if sig and epoch_arg is None:
+        return _fail("--expected-epoch is required with --signature")
+    expected_epoch = epoch_arg if epoch_arg is not None else project.read_stop_state()["epoch"]
+    claim = {"project_id": project.id, "action": act_name, "reason": reason, "expected_epoch": expected_epoch}
+    if not sig:
+        owner_key_file = Path(config["keys_dir"]) / "owner.key"
+        if not owner_key_file.is_file():
+            return _fail("no local owner.key found; pass --signature")
+        sig = _sig(_read_key(owner_key_file), claim)
+    actor_role = getattr(args, "role", "owner") or "owner"
+    if action == "stop":
+        st = project.issue_stop(reason, sig, actor_role=actor_role, expected_epoch=expected_epoch)
+        _emit({"status": "KILL_SWITCH_STOPPED", "project_id": project.id, "kill_switch": st})
+        return 0
+    if action == "clear":
+        st = project.clear_stop(reason, sig, actor_role=actor_role, expected_epoch=expected_epoch)
+        _emit({"status": "KILL_SWITCH_CLEARED", "project_id": project.id, "kill_switch": st})
+        return 0
+    return _fail(f"unknown kill-switch action: {action}")
 
 
 def cmd_replay(args) -> int:
@@ -824,8 +994,10 @@ def cmd_effect_demo(args) -> int:
 def _add_common(parser):
     parser.add_argument("--dir", required=True)
     parser.add_argument("--worker-uid", type=int, default=65534)
-
-
+    parser.add_argument("--service-socket", default=None)
+    parser.add_argument("--client-key", default=None)
+    parser.add_argument("--principal-id", default=None)
+    parser.add_argument("--client-workspace", default=None)
 
 
 def cmd_watchdog_record(args) -> int:
@@ -856,6 +1028,7 @@ def cmd_watchdog_status(args) -> int:
     _emit({"status": "OK", "watchdog_scope": st})
     return 0
 
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="openline",
@@ -881,6 +1054,8 @@ def main(argv=None) -> int:
     p.add_argument("--allowed-paths", default=None)
     p.add_argument("--as-member", default=None)
     p.add_argument("--signature", default=None)
+    p.add_argument("--post-stop-signature", default=None)
+    p.add_argument("--post-stop-owner-sign", action="store_true")
     p.set_defaults(func=cmd_assign)
 
     p = sub.add_parser("prepare", help="prepare a candidate worktree")
@@ -989,6 +1164,19 @@ def main(argv=None) -> int:
     _add_common(p)
     p.add_argument("--verify-only", action="store_true")
     p.set_defaults(func=cmd_guard)
+
+    p = sub.add_parser("kill-switch", help="owner-controlled Kill Switch standing, stop, clear, conformance, and evidence audit")
+    p.add_argument("--dir", default=None)
+    p.add_argument("--worker-uid", type=int, default=65534)
+    p.add_argument("--action", choices=("status", "stop", "clear", "conformance", "audit"), default="status")
+    p.add_argument("--reason", default=None)
+    p.add_argument("--signature", default=None)
+    p.add_argument("--expected-epoch", type=int, default=None, help="epoch bound into detached owner signature")
+    p.add_argument("--role", default="owner")
+    p.add_argument("--output-dir", default=None)
+    p.add_argument("--evidence-path", default=None)
+    p.add_argument("--races", type=int, default=20)
+    p.set_defaults(func=cmd_kill_switch)
 
     p = sub.add_parser("replay", help="run mandatory 12-step Living Projects end-to-end replay and comparison")
     p.add_argument("--output-dir", default=None)

@@ -89,7 +89,7 @@ def main(argv=None) -> int:
             from foundation.promotion import SafePromotion
             from project import ProjectLedger
             root = args.project_dir
-            promo = SafePromotion(root / 'accepted.git', root / 'effects.sqlite', root / 'promotion')
+            promo = SafePromotion(root / 'accepted.git', root / 'effects.sqlite', root / 'promotion', require_final_gate=True)
             project = ProjectLedger(root / 'project.sqlite', promotion=promo)
             import os
             from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat

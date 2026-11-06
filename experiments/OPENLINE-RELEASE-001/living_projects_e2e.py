@@ -456,12 +456,10 @@ def run_mandatory_12_step_e2e(root: Path) -> dict:
         assignment_id="repair-v2b-crash-ok",
     )
     try:
-        promo.promote(
+        project.promote_repair(
             "repair-v2b-crash-ok",
             acceptance_cmd=[sys.executable, "-B", config["validator"], config["project_db"]],
-            allow_prefixes=("app/price.py",),
             fail_after_ref=True,
-            refresh_snapshot=True,
         )
         raise AssertionError("expected injected_crash_after_ref_cas")
     except RuntimeError as exc:

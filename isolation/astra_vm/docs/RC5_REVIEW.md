@@ -1,0 +1,13 @@
+# RC5 source review before integration
+
+Recovered archive matches b47a80169b745b1fe3af3647f79ce181ba75903866f8ab7baf4a0b0c15cd0980. Internal manifest: 1513 matched, zero mismatches. RC4 internal manifest: 172 matched, zero mismatches. Claimed 528/528 RC5 executions are historical evidence, not this run's results.
+
+1. **Validator identity gap, confirmed in source.** `validation_runner.py:run` uses `subprocess.Popen(start_new_session=True)` without `user`, `group`, independent launcher or credential drop. Constructor `validator_uid`, `validator_gid`, and `use_systemd_trigger` are stored but not enforced. Receiver instantiates that runner. The unused path unit targets `active/request.json`; runner creates `job-<id>` and never triggers it. A new session/process group changes signal grouping, not OS authority. Existing tests create `IsolatedValidationRunner(spool)` and do not assert a different effective UID. The static AST fixture checker reduces candidate-execution risk, but does not prove OS separation.
+
+2. **openat2 fallback violates the selected profile.** Default `require_native_openat2=False` permits ENOSYS descriptor walking. The blueprint explicitly requires refusal of unsupported resolution flags. Device-number comparison is not equivalent to `RESOLVE_NO_XDEV` (same-filesystem bind mounts can retain device numbers); fallback leaf checking also applies its device check only to directories. This is a specification mismatch, not proof of a kernel exploit. The adapter changes the default to strict and refuses unsupported architectures.
+
+3. **Validation read-set gap.** `validator_contract.py` reads ordered `CONTRACT_CHANGED` events, but RC5's context projection omits those events. Adapter patch includes the events in the same hash rechecked before promotion. This is a conservative projection, not a new grant format.
+
+4. **Qualification script overclaim.** Argon's reproduce script prints OS isolation/operational PASS after a root/systemd provisioning branch. Successful provisioning alone cannot establish containment. This adapter's VM harness refuses to substitute configuration/static tests for a live guest. Actual systemd/libvirt qualification remains required.
+
+Implementation: preserve RC5 intact; prepare a new tree from the pinned ZIP and apply `deploy/rc5-vm-adapter.patch`. Inject `SocketValidationRunner`; production startup requires it. Validator launched independently under a distinct non-root UID, with kernel peer credentials checked in both directions. Only copied fixture inputs cross its socket. The receiver never launches candidate/checker processes. General candidate test execution is unsupported by this prototype.

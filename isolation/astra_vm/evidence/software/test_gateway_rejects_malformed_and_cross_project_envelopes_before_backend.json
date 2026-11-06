@@ -1,0 +1,30 @@
+[
+  {
+    "receiver_observation": {
+      "key_sha256": "b83697a517fc7d6090e1904a43290deb2371b3f8c51a3f8d893837f6b884c633",
+      "accepted": "d57f0c1831fed8df2cb74ff464f746e7bd56ef11",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  },
+  {
+    "receiver_observation": {
+      "key_sha256": "b83697a517fc7d6090e1904a43290deb2371b3f8c51a3f8d893837f6b884c633",
+      "accepted": "d57f0c1831fed8df2cb74ff464f746e7bd56ef11",
+      "stop": {
+        "stopped": false,
+        "epoch": 1,
+        "stop_seq": 0,
+        "clear_seq": 0,
+        "reason": "init"
+      },
+      "effects": []
+    }
+  }
+]

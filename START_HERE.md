@@ -1,82 +1,48 @@
-# OpenLine — START HERE
+# Start Here: OpenLine Ecosystem (8 Public Repositories)
 
-**OpenLine — Projects That Remember What They've Earned.**
-Experimental open-source software. Local-first, no accounts, no paid APIs,
-no production service. Start here, then follow each project's own README.
+Need the fastest path into OpenLine without reading eight repositories first? Start here.
 
-## The seven projects
+## 1. Fastest No-Clone Entry Point (Live Public Web App)
 
-| Project | What it is, in one line | Try it |
-|---|---|---|
-| [OpenLine Energy](https://github.com/terryncew/openline-energy) | California plug-in solar explorer you open in a browser. A planning tool, not a savings quote. | Open `index.html`, enter one monthly usage number. |
-| [Energy Autopilot](https://github.com/terryncew/openline-energy-autopilot) | Simulated EV charger that picks cheaper charging windows and holds on stale prices. No charger connected. | Run the Python demo (see its README). |
-| [Living Energy](https://github.com/terryncew/openline-living-energy) | Simulated charging mission that stops on bad evidence, tests a proposed repair, survives a restart, and resumes. | Run `run_demo.sh`, then the test suite (see below). |
-| [Mandate Ledger](https://github.com/terryncew/mandate-ledger) | Keeps the original file behind a U.S. House vote so a reader can check what was recorded and what changed. No politician scores, no motive judgments. | Run the CLI roll-call replay and member lookup. |
-| [Weight-Space Repair](https://github.com/terryncew/openline-weight-space-repair) | Local workbench that actually changes small neural-model weights, repairs deliberately damaged digit recognition, and checks against ordinary fixes (which tie). | Run `bash REPLAY.sh`. |
-| [OpenLine Connect](https://github.com/terryncew/openline-connect) | Local receiver gate: a business controls which agent requests are allowed and signs decisions another machine can audit. Fictional SQLite effects only. | Run `openline-connect demo`, then the tests. |
-| [OpenLine Living Projects](https://github.com/terryncew/openline-living-projects) (this repo) | Local developer preview: a receiver accepts or refuses a worker's change, signs the decision, and continues from the last accepted checkpoint after a worker is replaced. | `bash install.sh`, then `./experiments/OPENLINE-RELEASE-001/openline replay`. |
+- **OpenLine Idea Layer (Live Browser App)**: [https://terryncew.github.io/openline-idea-layer/](https://terryncew.github.io/openline-idea-layer/)
+- **OpenLine Idea Layer Repository**: [https://github.com/terryncew/openline-idea-layer](https://github.com/terryncew/openline-idea-layer)
 
-## Verified versions (November 4, 2026)
+You can browse 12 curated local-first small-business starting problems (432 deterministic combinations), inspect explicit safety boundaries and cheapest real-world demand tests, export a build-ready agent assignment brief (`node export_brief.mjs --list`), or run the 20-test verification suite locally with zero external dependencies (`node --test tests/*.test.mjs trials/compare_briefs_vs_manual_template.test.mjs trials/trial_*/test.mjs`).
 
-- openline-energy: main `a548539b`, MIT, v0.2.1.
-- openline-energy-autopilot: main `91014170`, MIT.
-- openline-living-energy: tag v0.4.3 (code commit `347c4a7b`; main HEAD may carry later docs-only amendments — the tag is the release).
-- mandate-ledger: tag v0.3.3, main `2984b7a`, MIT.
-- openline-weight-space-repair: tag v0.2.0, main `d4805bc`, Apache-2.0.
-- openline-connect: tag v0.1.0rc2, main `507b5348`, Apache-2.0.
-- openline-living-projects: tag v0.1.1 (commit `730bf184`); this file lives on main after that tag.
+## 2. Which OpenLine Repo Do You Need?
 
-If a HEAD above has moved, the tag is the release to check out. A HEAD drift
-without a new tag is not a new release.
+| Goal | Repository | Quick Verification Command |
+| :--- | :--- | :--- |
+| Pick a concrete business hypothesis, export a deterministic agent build brief (`export_brief.mjs`), and run 6 sector prototype acceptance suites (`IL-3-0`, `IL-8-0`, `IL-11-0`, `IL-1-0`, `IL-4-0`, `IL-6-0`) | [openline-idea-layer](https://github.com/terryncew/openline-idea-layer) | `node --test tests/*.test.mjs trials/compare_briefs_vs_manual_template.test.mjs trials/trial_*/test.mjs` (`20/20 PASS`) |
+| Keep multi-agent coding projects coherent across handoffs, crashes, and replacement agents with receiver-owned Kill Switch and Agent Hunt (`AGENT-HUNT-001`) | [openline-living-projects](https://github.com/terryncew/openline-living-projects) | `python3 experiments/OPENLINE-RELEASE-001/run_demo.py --dir /tmp/ol-demo && bash experiments/OPENLINE-RELEASE-001/REPLAY.sh` (`EXIT 0`) |
+| Preserve public-record source bytes (U.S. House Clerk Roll Call 283 XML), check completeness, and reopen dependent reviews when evidence changes | [mandate-ledger](https://github.com/terryncew/mandate-ledger) | `./REPLAY_EXPERIMENTAL.sh` (`42/42 PASS`) |
+| Gate AI agent actions through default-deny SQLite execution controls and receiver-signed Ed25519 receipts (`cryptography >= 38`) | [openline-connect](https://github.com/terryncew/openline-connect) | `python3 scripts/run_tests.py && PYTHONPATH="$PWD/src" python3 -m openline_connect.cli demo` (`15/15 PASS`) |
+| Explore California SB 868 plug-in solar scenarios locally with AB 205 fixed charges, daytime load caps, and adversarial safety tests in Node.js | [openline-energy](https://github.com/terryncew/openline-energy) | `node tests/test_engine_and_attacks.js && node tests/test_gpt_release_regressions.js` (`26/26 PASS`) |
+| Run Python residential EV charging schedule optimization, tariff window planning, and hash-chained receipt verification in simulation | [openline-energy-autopilot](https://github.com/terryncew/openline-energy-autopilot) | `python3 demo.py && PYTHONPATH=src python3 -m unittest discover -s tests -v` (`62/62 PASS`) |
+| Gate proposed energy controller source repairs through an isolated Linux user/mount/PID/net namespace sandbox and receiver attestor | [openline-living-energy](https://github.com/terryncew/openline-living-energy) | `./run_demo.sh && ./REPLAY_EXPERIMENTAL.sh` (`64/64` energy + `67/67` living-energy PASS) |
+| Diagnose, rank, and repair corrupted neural network weights (`.safetensors` / NumPy CPU or PyTorch) with falsifier-gated rollbacks | [openline-weight-space-repair](https://github.com/terryncew/openline-weight-space-repair) | `bash REPLAY.sh` (`14/14` unit + `4/4` live CPU scripts PASS, no PyTorch required) |
 
-## How to verify (public material only)
+## 3. Copy-Paste Agent Prompt (Works in Any Coding Agent)
 
-```bash
-git clone https://github.com/terryncew/openline-living-energy.git
-cd openline-living-energy
-sha256sum -c SHA256SUMS.txt
-bash run_demo.sh
+Paste this prompt into Claude Code, Cursor, Codex, Gemini, or any local agent:
+
+```text
+Clone https://github.com/terryncew/openline-idea-layer and https://github.com/terryncew/openline-living-projects.
+1. In openline-idea-layer, run `node export_brief.mjs --list`, export the brief for sector 7 (`node export_brief.mjs --sector 7 --audience "small businesses" --format toolkit --budget 0`), and run `node --test trials/trial_2_food_allergen/test.mjs`.
+2. In openline-living-projects, run `python3 experiments/OPENLINE-RELEASE-001/run_demo.py --dir /tmp/ol-demo` and `python3 -m unittest discover -s experiments/AGENT-HUNT-001/tests -v`.
+3. Show me how Idea Layer's exported brief (`IL-8-0`) connects to Living Projects' receiver-owned authorization, Agent Hunt (`AGENT-HUNT-001`), crash recovery, and replacement-agent succession.
 ```
 
-Each repo documents its own install and test commands in its README. General
-needs: Linux, Python 3.11+, git, Node 18+ (Energy only). Python packages are
-installed per repo from that repo's own requirements (Living Projects needs
-`cryptography`; Weight-Space Repair needs CPU torch for its full suite;
-Connect needs its `src/` on `PYTHONPATH` for subprocess tests — use an
-absolute path, not a relative one).
+## 4. End-to-End Cross-Product Verification (`integration/`)
 
-**Living Energy interpreter note:** its namespace sandbox masks `/home`,
-`/root`, `/mnt`, `/working_dir`, `/tmp`, and `/var/tmp` (fresh tmpfs over
-the last two). Run its suite from an interpreter outside all of those
-paths, or the sandbox tests fail by design: a venv under `$HOME` or
-`/tmp` disappears inside the namespace because the interpreter itself
-is masked. The simplest working setup is the system interpreter with
-cryptography installed as a system package, or a venv under `/opt`.
-Do not rely on `pip install --user` cryptography for
-`./REPLAY_EXPERIMENTAL.sh`: that script sets `PYTHONNOUSERSITE=1`,
-which hides user-site packages from the sandbox branch. The CI host
-disallows user namespaces, so sandbox tests are NOT TESTED in CI; the
-full 67-test suite was verified locally with a properly placed
-interpreter. The sandbox no longer needs `iproute2`.
+In the integrated workspace, run the full cross-product workflow (`Idea Layer -> Prototype -> Agent Hunt -> Receiver Kill Switch -> Signed Acceptance -> Crash Recovery -> Replacement-Agent Succession` + `Energy / Mandate Ledger / Weight-Space Repair` Living Network loop):
 
-## What is NOT here (do not mistake these for shipped features)
+```bash
+python3 -m unittest discover -s integration/tests -p "test_*.py" -v
+```
 
-- No Mandate Ledger dashboard site. The repo contains a fictional browser
-  example file; there is no deployed dashboard URL, and the newer dashboard
-  candidate is unpublished.
-- No integrated Living Network module, no Weight-Space emergence v0.3.0,
-  no Connect expansion. Those are separate, unpublished proposals.
-- No physical charger control, no measured household savings (the $2.67
-  autopilot figure is modeled on synthetic tariffs), no live government
-  ingestion, no live frontier-model repair, no production authorization,
-  no adoption claim. Conventional alternatives tie or beat OpenLine on the
-  constructed comparisons, and that negative result is part of the record.
-- Test counts are not adoption, and a signed receipt proves what the
-  receiver recorded and signed, not what happened afterward.
+## 5. Honest Scope & Claim Guardrails
 
-## Dedication
-
-The founder dedicated the three newest projects (Living Energy, Mandate
-Ledger, Weight-Space Repair) to Nolan Wells, Ms. Rachel, and Stacey Abrams.
-Their names are in those projects' `DEDICATION.md` files. No involvement,
-sponsorship, or endorsement by them is implied.
+- **Proven in software & Linux user/mount/PID/net namespaces**: All 8 public repositories and the cross-product integration suite execute deterministically on CPU with standard open-source tooling.
+- **Equal-information audit parity (`PARITY`)**: In `openline-living-projects`, `AGENT-HUNT-001` catches `4/4` constructed authority/replay/revocation/provenance attacks, and a competent conventional SQLite audit over the same normalized records also catches `4/4` (`PARITY`).
+- **Held claims (`NOT TESTED` in container sandboxes)**: Do not claim hardware KVM guest-root containment without running `isolation/astra_vm/deploy/disposable_vm_package/run_disposable_vm_qualification.sh` on a bare-metal Linux host with `/dev/kvm`, and do not claim live physical EV charger actuation without physical hardware-in-the-loop qualification.

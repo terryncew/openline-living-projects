@@ -1,0 +1,254 @@
+diff -ruN a/experiments/OPENLINE-RECEIVER-ISOLATION-001/candidate_transfer.py b/experiments/OPENLINE-RECEIVER-ISOLATION-001/candidate_transfer.py
+--- a/experiments/OPENLINE-RECEIVER-ISOLATION-001/candidate_transfer.py	2026-11-05 21:09:16.000000000 +0000
++++ b/experiments/OPENLINE-RECEIVER-ISOLATION-001/candidate_transfer.py	2026-11-06 05:49:54.000000000 +0000
+@@ -52,7 +52,7 @@
+     return False
+ 
+ 
+-def build_workspace_manifest(workspace_dir: Path | str, snapshot_db: Path | str) -> dict[str, Any]:
++def build_workspace_manifest(workspace_dir: Path | str, snapshot_db: Path | str, *, require_native_openat2: bool = True) -> dict[str, Any]:
+     """Build a deterministic manifest of regular files in `workspace_dir` (excluding `.git`) and `snapshot_db`."""
+     ws = Path(workspace_dir)
+     if ws.is_symlink() or not ws.is_dir():
+@@ -67,7 +67,7 @@
+             raise CandidateTransferError(f"workspace_contains_symlink:{rel}", code="SYMLINK_OR_SUBMODULE_FORBIDDEN")
+         if not p.is_file():
+             continue
+-        raw = read_bytes_beneath(ws, rel)
++        raw = read_bytes_beneath(ws, rel, require_native_openat2=require_native_openat2)
+         st = p.stat()
+         mode_str = "100755" if (st.st_mode & 0o111) else "100644"
+         files_manifest.append({
+@@ -98,6 +98,7 @@
+     offset: int,
+     length: int,
+     max_chunk_bytes: int = 262144,
++    require_native_openat2: bool = True,
+ ) -> dict[str, Any]:
+     """Read a bounded byte chunk from either `@snapshot_db` or a relative file path in `workspace_dir`."""
+     if type(offset) is not int or offset < 0:
+@@ -114,7 +115,7 @@
+         if target == ".git" or target.startswith(".git/"):
+             raise CandidateTransferError("git_metadata_chunk_forbidden", code="OUT_OF_SCOPE_PATH")
+         try:
+-            raw = read_bytes_beneath(workspace_dir, target)
++            raw = read_bytes_beneath(workspace_dir, target, require_native_openat2=require_native_openat2)
+         except OpenAt2Error as exc:
+             raise CandidateTransferError(f"chunk_read_rejected:{exc}", code="OUT_OF_SCOPE_PATH") from exc
+ 
+@@ -259,6 +260,7 @@
+     max_single_file_bytes: int = 1 * 1024 * 1024,
+     max_total_bytes: int = 4 * 1024 * 1024,
+     reject_binary_nul: bool = True,
++    require_native_openat2: bool = True,
+ ) -> dict[str, Any]:
+     """Validate an untrusted `files[]` candidate submission in memory first, then safely apply it to `workspace_dir`."""
+     ws = Path(workspace_dir)
+@@ -364,7 +366,7 @@
+             file_mode = 0o700 if mode == "100755" else 0o600
+             atomic_write_bytes(target, decoded, mode=file_mode, dir_mode=0o700)
+             # Re-verify via open_beneath that the written file is regular, single-link, and beneath ws
+-            fd = open_beneath(ws, norm_path, os.O_RDONLY, check_single_link=True, expect_regular=True)
++            fd = open_beneath(ws, norm_path, os.O_RDONLY, require_native_openat2=require_native_openat2, check_single_link=True, expect_regular=True)
+             os.close(fd)
+         applied_paths.append(norm_path)
+ 
+diff -ruN a/experiments/OPENLINE-RECEIVER-ISOLATION-001/durable_io.py b/experiments/OPENLINE-RECEIVER-ISOLATION-001/durable_io.py
+--- a/experiments/OPENLINE-RECEIVER-ISOLATION-001/durable_io.py	2026-11-05 21:09:16.000000000 +0000
++++ b/experiments/OPENLINE-RECEIVER-ISOLATION-001/durable_io.py	2026-11-06 05:51:08.000000000 +0000
+@@ -66,7 +66,32 @@
+     return norm, parts
+ 
+ 
++def kernel_supports_native_openat2() -> bool:
++    """Return True if the running kernel supports Linux 5.6+ openat2 (syscall 437)."""
++    try:
++        root_fd = os.open(".", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0))
++    except OSError:
++        return False
++    try:
++        fd, err = _try_native_openat2(
++            root_fd,
++            b".",
++            os.O_RDONLY | getattr(os, "O_CLOEXEC", 0),
++            0,
++            RESOLVE_BENEATH | RESOLVE_NO_SYMLINKS | RESOLVE_NO_MAGICLINKS | RESOLVE_NO_XDEV,
++        )
++        if fd >= 0:
++            os.close(fd)
++            return True
++        return err != errno.ENOSYS
++    finally:
++        os.close(root_fd)
++
++
+ def _try_native_openat2(root_fd: int, relpath_bytes: bytes, flags: int, mode: int, resolve: int) -> tuple[int, int]:
++    import platform
++    if platform.machine() not in ("x86_64", "aarch64"):
++        return -1, errno.ENOSYS
+     if _LIBC is None:
+         return -1, errno.ENOSYS
+     how = _OpenHow(
+@@ -87,7 +112,7 @@
+     flags: int = os.O_RDONLY,
+     mode: int = 0o600,
+     *,
+-    require_native_openat2: bool = False,
++    require_native_openat2: bool = True,
+     check_single_link: bool = True,
+     expect_regular: bool = True,
+ ) -> int:
+@@ -174,9 +199,23 @@
+         os.close(root_fd)
+ 
+ 
+-def read_bytes_beneath(root_dir: Path | str, relpath: str, *, max_bytes: int | None = None, check_single_link: bool = True) -> bytes:
++def read_bytes_beneath(
++    root_dir: Path | str,
++    relpath: str,
++    *,
++    max_bytes: int | None = None,
++    check_single_link: bool = True,
++    require_native_openat2: bool = True,
++) -> bytes:
+     """Safely read a regular file strictly beneath `root_dir` with optional size cap."""
+-    fd = open_beneath(root_dir, relpath, os.O_RDONLY, check_single_link=check_single_link, expect_regular=True)
++    fd = open_beneath(
++        root_dir,
++        relpath,
++        os.O_RDONLY,
++        require_native_openat2=require_native_openat2,
++        check_single_link=check_single_link,
++        expect_regular=True,
++    )
+     try:
+         st = os.fstat(fd)
+         if max_bytes is not None and st.st_size > max_bytes:
+diff -ruN a/experiments/OPENLINE-RECEIVER-ISOLATION-001/receiver_service.py b/experiments/OPENLINE-RECEIVER-ISOLATION-001/receiver_service.py
+--- a/experiments/OPENLINE-RECEIVER-ISOLATION-001/receiver_service.py	2026-11-05 21:09:16.000000000 +0000
++++ b/experiments/OPENLINE-RECEIVER-ISOLATION-001/receiver_service.py	2026-11-06 06:38:15.634096017 +0000
+@@ -57,6 +57,7 @@
+     atomic_write_json,
+     connect_durable_sqlite,
+     fsync_directory,
++    kernel_supports_native_openat2,
+ )
+ from git_runner import SanitizedGitRunner  # noqa: E402
+ from ipc_protocol import (  # noqa: E402
+@@ -105,6 +106,7 @@
+         self,
+         config: dict[str, Any],
+         *,
++        validation_runner=None,
+         require_distinct_uids: bool = False,
+         require_systemd_hardening: bool = False,
+         crash_cutpoint: str | None = None,
+@@ -140,7 +142,19 @@
+ 
+         # 3. Initialize SanitizedGitRunner and IsolatedValidationRunner
+         self.git_runner = SanitizedGitRunner(self.paths["empty_hooks_dir"], home_dir=self.paths["root_dir"])
+-        self.validation_runner = IsolatedValidationRunner(
++        if require_distinct_uids and (
++            self.config.get("allow_single_uid_test_harness") or self.config.get("allow_enosys_openat2_fallback")
++        ):
++            raise ProtectError("production_forbids_test_harness_fallbacks")
++        if require_distinct_uids and validation_runner is None:
++            raise ProtectError("external_validator_required")
++        self.require_native_openat2 = True if require_distinct_uids else bool(
++            self.config.get(
++                "require_native_openat2",
++                kernel_supports_native_openat2() if self.config.get("allow_single_uid_test_harness") else True,
++            )
++        )
++        self.validation_runner = validation_runner or IsolatedValidationRunner(
+             self.paths["validation_spool_dir"],
+             validator_uid=self.config["validator_uid"],
+             validator_gid=self.config["validator_gid"],
+@@ -627,7 +641,7 @@
+                         _, state = self.promotion._load(assignment_id)
+                     else:
+                         state = self.promotion.prepare(assignment_id)
+-                    manifest = build_workspace_manifest(state["workspace"], state["snapshot_db"])
++                    manifest = build_workspace_manifest(state["workspace"], state["snapshot_db"], require_native_openat2=self.require_native_openat2)
+                     proposed_mem = None
+                     if payload.get("propose_memory"):
+                         proposed_mem = self.project.propose_memory(
+@@ -654,14 +668,19 @@
+                 assignment_id = str(payload.get("assignment_id") or "")
+                 self.protect._validate_assignment_id(assignment_id)
+                 self._verify_worker_owns_assignment(assignment_id, member_id)
+-                _, state = self.promotion._load(assignment_id)
++                with self._db_tx_lock:
++                    self.project.preliminary_admit(assignment_id)
++                    _, state = self.promotion._load(assignment_id)
++                raw_offset = payload.get("offset", 0)
++                raw_length = payload.get("length", int(self.limits["snapshot_chunk_bytes"]))
+                 chunk = read_snapshot_chunk(
+                     state["workspace"],
+                     state["snapshot_db"],
+                     target=str(payload.get("target") or ""),
+-                    offset=int(payload.get("offset", 0)),
+-                    length=int(payload.get("length", self.limits["snapshot_chunk_bytes"])),
++                    offset=raw_offset,
++                    length=raw_length,
+                     max_chunk_bytes=int(self.limits["snapshot_chunk_bytes"]),
++                    require_native_openat2=self.require_native_openat2,
+                 )
+                 result = {"status": "OK", **chunk}
+ 
+@@ -712,6 +731,7 @@
+                                         max_files=int(self.limits["max_files"]),
+                                         max_single_file_bytes=int(self.limits["max_single_file_bytes"]),
+                                         max_total_bytes=int(self.limits["max_total_bytes"]),
++                                        require_native_openat2=self.require_native_openat2,
+                                     )
+                                 else:
+                                     transfer_info = {"applied_paths": [], "candidate_manifest_sha256": "LOCAL_WORKTREE"}
+@@ -923,6 +943,10 @@
+             else:
+                 raise IPCProtocolError(f"unsupported_operation:{op}", code="OPERATION_NOT_ALLOWED")
+ 
++        except CandidateTransferError as exc:
++            status = "REFUSED"
++            code = exc.code
++            result = {"status": "REFUSED", "error": exc.reason, "reason": exc.reason}
+         except (ProjectRefused, ProtectError, PromotionRefused) as exc:
+             status = "REFUSED"
+             code = str(exc)
+diff -ruN a/experiments/OPENLINE-RECEIVER-ISOLATION-001/tests/test_production_isolation_suite.py b/experiments/OPENLINE-RECEIVER-ISOLATION-001/tests/test_production_isolation_suite.py
+--- a/experiments/OPENLINE-RECEIVER-ISOLATION-001/tests/test_production_isolation_suite.py	2026-11-05 21:09:16.000000000 +0000
++++ b/experiments/OPENLINE-RECEIVER-ISOLATION-001/tests/test_production_isolation_suite.py	2026-11-06 05:50:24.000000000 +0000
+@@ -73,6 +73,7 @@
+ from durable_io import (  # noqa: E402
+     OpenAt2Error,
+     atomic_write_bytes,
++    kernel_supports_native_openat2,
+     open_beneath,
+     read_bytes_beneath,
+ )
+@@ -132,7 +133,10 @@
+         (sandbox / "app").mkdir(mode=0o700)
+         f_ok = sandbox / "app" / "ok.py"
+         atomic_write_bytes(f_ok, b"x = 1\n", mode=0o600)
+-        self.assertEqual(read_bytes_beneath(sandbox, "app/ok.py"), b"x = 1\n")
++        if not kernel_supports_native_openat2():
++            with self.assertRaises(OpenAt2Error):
++                read_bytes_beneath(sandbox, "app/ok.py", require_native_openat2=True)
++        self.assertEqual(read_bytes_beneath(sandbox, "app/ok.py", require_native_openat2=kernel_supports_native_openat2()), b"x = 1\n")
+ 
+         for bad_rel in ("/etc/passwd", "../project.sqlite", "app/../../project.sqlite", "proc/self/environ", "app/ok.py\x00"):
+             with self.assertRaises(OpenAt2Error):
+diff -ruN a/experiments/OPENLINE-RECEIVER-ISOLATION-001/validation_runner.py b/experiments/OPENLINE-RECEIVER-ISOLATION-001/validation_runner.py
+--- a/experiments/OPENLINE-RECEIVER-ISOLATION-001/validation_runner.py	2026-11-05 21:09:16.000000000 +0000
++++ b/experiments/OPENLINE-RECEIVER-ISOLATION-001/validation_runner.py	2026-11-06 05:49:54.000000000 +0000
+@@ -103,7 +103,10 @@
+         contracts = db.execute("SELECT project_id, dep_key, contract FROM dependency_contracts ORDER BY project_id, dep_key").fetchall()
+         asgns = db.execute("SELECT id, deliverable_id, worker_member, basis, allowed_paths, state FROM assignments ORDER BY id").fetchall()
+         members = db.execute("SELECT project_id, member_id, owner_pub, worker_pub, active FROM members ORDER BY project_id, member_id").fetchall()
++        has_events = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='events'").fetchone()
++        events = db.execute("SELECT seq, payload FROM events WHERE kind='CONTRACT_CHANGED' ORDER BY seq").fetchall() if has_events else []
+     payload = {
++        "contract_changed_events": events,
+         "projects": proj,
+         "deliverables": delivs,
+         "dependencies": deps,

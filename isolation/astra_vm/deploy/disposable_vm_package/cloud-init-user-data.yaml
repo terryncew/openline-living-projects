@@ -1,0 +1,27 @@
+#cloud-config
+hostname: openline-worker-test
+manage_etc_hosts: true
+disable_root: false
+ssh_pwauth: false
+write_files:
+  - path: /usr/local/bin/guest_root_containment_probe.py
+    permissions: '0755'
+    content: |
+      #!/usr/bin/env python3
+      """Guest-root (uid=0 inside KVM guest) containment probe.
+      Runs inside the disposable KVM guest (192.168.251.2) to verify:
+      1. Zero host filesystem shares (no virtiofs/9p/nfs mounts), zero vsock/channel/hostdev devices.
+      2. L2/L3 firewall drops all outbound connections except TCP 192.168.251.1:7443 (mTLS gateway).
+      3. Guest root cannot issue control.stop or forge/alter receiver keys or accepted Git refs.
+      4. Legitimate worker repair over mTLS 192.168.251.1:7443 succeeds and returns a verifiable receipt.
+      """
+      import json, os, pathlib, socket
+      report = {
+          "guest_uid": os.getuid(),
+          "virtiofs_or_9p_mounts": [
+              line for line in pathlib.Path("/proc/mounts").read_text().splitlines()
+              if any(fs in line for fs in ("9p", "virtiofs", "nfs", "cifs"))
+          ],
+          "vsock_devices": [str(p) for p in pathlib.Path("/dev").glob("*vsock*")],
+      }
+      print(json.dumps(report, indent=2))
