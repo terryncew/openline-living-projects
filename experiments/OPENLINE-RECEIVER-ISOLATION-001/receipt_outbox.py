@@ -163,10 +163,14 @@ class ReceiptOutbox:
         return published
 
     def get_by_assignment(self, assignment_id: str) -> dict[str, Any] | None:
+        # Latest observation wins. created_at has 1-second resolution, so two
+        # reconciles in the same second (e.g. CUT-02 STOPPED then CUT-03
+        # ACCEPTED) tie on (created_at, observation_seq); rowid DESC breaks
+        # the tie by insertion order so the newest receipt is returned.
         with closing(sqlite3.connect(self.db_path, timeout=15.0)) as db:
             row = db.execute(
                 "SELECT operation_id, observation_seq, incident_id, verdict, receipt_sha256, receipt_json, published_path "
-                "FROM receipt_outbox WHERE assignment_id=? ORDER BY created_at DESC, observation_seq DESC LIMIT 1",
+                "FROM receipt_outbox WHERE assignment_id=? ORDER BY created_at DESC, observation_seq DESC, rowid DESC LIMIT 1",
                 (assignment_id,),
             ).fetchone()
         if row is None:

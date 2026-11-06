@@ -90,6 +90,7 @@ from ipc_protocol import (  # noqa: E402
 from preflight import audit_production_preflight  # noqa: E402
 from protect import _worker_group_ids, check_receiver_boundary, verify_receipt  # noqa: E402
 from receiver_service import OpenLineReceiverService  # noqa: E402
+from receipt_outbox import ReceiptOutbox  # noqa: E402
 from validation_runner import IsolatedValidationRunner, ValidationJob  # noqa: E402
 from openline_guard import ReceiverGuard, SigningIdentity, sign_envelope  # noqa: E402
 
@@ -768,6 +769,35 @@ class ProductionIsolationTestSuite(unittest.TestCase):
     # ------------------------------------------------------------------
     # M7: Operational qualification rehearsal & Linux userns probe
     # ------------------------------------------------------------------
+    def test_06b_outbox_latest_receipt_wins_on_same_second_tie(self):
+        # Regression test (post-publication verification 2026-11-06): two
+        # reconciles in the same second (CUT-02 STOPPED, then CUT-03
+        # ACCEPTED) tie on (created_at, observation_seq) because created_at
+        # has 1-second resolution. get_by_assignment must return the newest
+        # (ACCEPTED) receipt, not an arbitrary tied row.
+        outbox = ReceiptOutbox(self.base / "outbox.sqlite", self.base / "incidents")
+
+        def _receipt(incident_id, verdict):
+            return {
+                "payload": {"incident_id": incident_id, "verdict": verdict},
+                "payload_sha256": hashlib.sha256(incident_id.encode()).hexdigest(),
+            }
+
+        outbox.enqueue(
+            operation_id="reconcile:repair-tie:head-stopped",
+            assignment_id="repair-tie",
+            receipt=_receipt("inc-tie-stopped", "STOPPED"),
+        )
+        outbox.enqueue(
+            operation_id="reconcile:repair-tie:head-accepted",
+            assignment_id="repair-tie",
+            receipt=_receipt("inc-tie-accepted", "ACCEPTED"),
+        )
+        latest = outbox.get_by_assignment("repair-tie")
+        self.assertIsNotNone(latest)
+        self.assertEqual(latest["verdict"], "ACCEPTED")
+        self.assertEqual(latest["incident_id"], "inc-tie-accepted")
+
     def test_07_m7_operational_rehearsal_and_userns_probe(self):
         out = run_rehearsal()
         self.assertEqual(out["status"], "PASS")
